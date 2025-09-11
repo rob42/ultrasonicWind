@@ -1,0 +1,124 @@
+#pragma once
+#include <Arduino.h>
+#include <zenoh-pico.h>
+#include <map>
+#include <vector>
+#include <functional>
+
+class ZenohNode {
+public:
+    using SubCallback = std::function<void(const char* key, const char* value, size_t len)>;
+
+    ZenohNode(const char* mode = "client", const char* locator = "")
+        : mode_(mode), locator_(locator), initialized_(false) {}
+
+    bool begin() {
+        z_config_default(&config_);
+        zp_config_insert(z_config_loan_mut(&config_), Z_CONFIG_MODE_KEY, mode_);
+        if (strcmp(locator_, "") != 0) {
+            if (strcmp(mode_, "client") == 0)
+                zp_config_insert(z_config_loan_mut(&config_), Z_CONFIG_CONNECT_KEY, locator_);
+            else
+                zp_config_insert(z_config_loan_mut(&config_), Z_CONFIG_LISTEN_KEY, locator_);
+        }
+        if (z_open(&session_, z_config_move(&config_), NULL) < 0) {
+            Serial.println("Unable to open Zenoh session!");
+            return false;
+        }
+        if (zp_start_read_task(z_session_loan_mut(&session_), NULL) < 0 ||
+            zp_start_lease_task(z_session_loan_mut(&session_), NULL) < 0) {
+            Serial.println("Unable to start Zenoh tasks!");
+            z_session_drop(z_session_move(&session_));
+            return false;
+        }
+        initialized_ = true;
+        return true;
+    }
+
+    // Publisher APIs
+    bool addPublisher(const char* keyexpr) {
+        if (!initialized_) return false;
+        if (publishers_.count(keyexpr)) return true; // Already exists
+
+        z_owned_publisher_t pub;
+        z_view_keyexpr_t ke;
+        z_view_keyexpr_from_str_unchecked(&ke, keyexpr);
+        if (z_declare_publisher(z_session_loan(&session_), &pub, z_view_keyexpr_loan(&ke), NULL) < 0) {
+            Serial.print("Unable to declare publisher for key: ");
+            Serial.println(keyexpr);
+            return false;
+        }
+        publishers_[keyexpr] = pub;
+        return true;
+    }
+
+    bool publish(const char* keyexpr, const char* value) {
+        if (!initialized_ || !publishers_.count(keyexpr)) return false;
+        z_owned_bytes_t payload;
+        z_bytes_copy_from_str(&payload, value);
+        if (z_publisher_put(z_publisher_loan(&publishers_[keyexpr]), z_bytes_move(&payload), NULL) < 0) {
+            Serial.print("Error while publishing data for key: ");
+            Serial.println(keyexpr);
+            return false;
+        }
+        return true;
+    }
+
+    // Subscriber APIs
+    bool addSubscriber(const char* keyexpr, SubCallback cb) {
+        if (!initialized_) return false;
+        if (subscribers_.count(keyexpr)) return true; // Already exists
+
+        // Lambda callback wrapper
+        struct CallbackWrapper {
+            static void call(const z_sample_t* sample, void* arg) {
+                auto* wrapper = static_cast<std::pair<SubCallback, String>*>(arg);
+                if (sample && sample->payload.len > 0) {
+                    wrapper->first(wrapper->second.c_str(),
+                                   reinterpret_cast<const char*>(sample->payload.start),
+                                   sample->payload.len);
+                }
+            }
+        };
+
+        // Store callback and keyexpr
+        auto* wrapper = new std::pair<SubCallback, String>(cb, keyexpr);
+        z_owned_closure_sample_t closure = z_closure_sample(CallbackWrapper::call, wrapper);
+
+        z_owned_subscriber_t sub;
+        z_view_keyexpr_t ke;
+        z_view_keyexpr_from_str_unchecked(&ke, keyexpr);
+        if (z_declare_subscriber(z_session_loan(&session_), &sub, z_view_keyexpr_loan(&ke), closure, NULL) < 0) {
+            Serial.print("Unable to declare subscriber for key: ");
+            Serial.println(keyexpr);
+            delete wrapper;
+            return false;
+        }
+        subscribers_[keyexpr] = std::make_pair(sub, wrapper);
+        return true;
+    }
+
+    ~ZenohNode() {
+        // Drop publishers
+        for (auto& kv : publishers_) {
+            z_publisher_drop(z_publisher_move(&kv.second));
+        }
+        // Drop subscribers and delete callback wrappers
+        for (auto& kv : subscribers_) {
+            z_subscriber_drop(z_subscriber_move(&kv.second.first));
+            delete kv.second.second;
+        }
+        if (initialized_) {
+            z_session_drop(z_session_move(&session_));
+        }
+    }
+
+private:
+    const char* mode_;
+    const char* locator_;
+    bool initialized_;
+    z_owned_config_t config_;
+    z_owned_session_t session_;
+    std::map<String, z_owned_publisher_t> publishers_;
+    std::map<String, std::pair<z_owned_subscriber_t, void*>> subscribers_;
+};

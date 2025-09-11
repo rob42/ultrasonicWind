@@ -1,3 +1,5 @@
+
+
 /***********************************************************************//**
   \file   ultrasonicWind.ino
   \brief  NMEA2000 base file for ultrasonicWind. Send main data to the bus.
@@ -14,10 +16,10 @@
 //#define N2k_SPI_CS_PIN 53    // If you use mcp_can and CS pin is not 53, uncomment this and modify definition to match your CS pin.
 //#define N2k_CAN_INT_PIN 21   // If you use mcp_can and interrupt pin is not 21, uncomment this and modify definition to match your interrupt pin.
 //#define USE_MCP_CAN_CLOCK_SET 8  // If you use mcp_can and your mcp_can shield has 8MHz chrystal, uncomment this.
-#define ESP32_CAN_TX_PIN GPIO_NUM_3 // If you use ESP32 and do not have TX on default IO 16, uncomment this and and modify definition to match your CAN TX pin.
-#define ESP32_CAN_RX_PIN GPIO_NUM_1 // If you use ESP32 and do not have RX on default IO 4, uncomment this and and modify definition to match your CAN RX pin.
-#define ESP32_MOD_RX_PIN GPIO_NUM_21  //modbus RX
-#define ESP32_MOD_TX_PIN GPIO_NUM_20  //modbux TX
+#define ESP32_CAN_TX_PIN GPIO_NUM_21 // If you use ESP32 and do not have TX on default IO 16, uncomment this and and modify definition to match your CAN TX pin.
+#define ESP32_CAN_RX_PIN GPIO_NUM_20 // If you use ESP32 and do not have RX on default IO 4, uncomment this and and modify definition to match your CAN RX pin.
+#define ESP32_MOD_RX_PIN GPIO_NUM_2  //modbus RX
+#define ESP32_MOD_TX_PIN GPIO_NUM_0  //modbux TX
 
 #define LED_BLUE 8 // blue LED pin 
 #include <Arduino.h>
@@ -34,8 +36,11 @@
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-#include "LittleFS.h"
+#include <LittleFS.h>
 #include <Arduino_JSON.h>
+#include <zenoh-pico.h>
+
+
 
 //modbus
 #define MODBUS_SLAVE_ID 1    //default is 0xFF, change via modbus-cli, ~/.local/bin/modbus -s 0 -b 9600 /dev/ttyUSB0 0=1 -v
@@ -121,8 +126,8 @@ uint32_t getUniqueId(){
 
 // Get Sensor Readings and return JSON object
 String getSensorReadings(){
-  readings["awa"] = 120; //String(bme.readTemperature());
-  readings["aws"] =  10; //String(bme.readHumidity());
+  readings["awa"] = deAverageAwa(); //String(bme.readTemperature());
+  readings["aws"] =  aws; //String(bme.readHumidity());
   String jsonString = JSON.stringify(readings);
   return jsonString;
 }
@@ -135,39 +140,66 @@ void initLittleFS() {
   Serial.println("LittleFS mounted successfully");
 }
 
+void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info){
+  Serial.println("Connected to AP successfully!");
+}
+
+void WiFiGotIP(WiFiEvent_t event, WiFiEventInfo_t info){
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info){
+  Serial.println("Disconnected from WiFi access point");
+  Serial.print("WiFi lost connection. Reason: ");
+  Serial.println(info.wifi_sta_disconnected.reason);
+  Serial.println("Trying to Reconnect");
+  WiFi.begin(ssid, password);
+  WiFi.setTxPower(WIFI_POWER_15dBm);
+}
+
 // Initialize WiFi
 void initWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(100);
-  // Serial.println();
-  // Serial.print("Scanning networks ");
-  // int n = WiFi.scanNetworks();
-  // Serial.println("Done. Printing network list ");
-  // for (int i = 0; i < n; i++)
-  // {
-  //   Serial.print(WiFi.SSID(i));
-  //   Serial.print("  ");
-  //    Serial.println(WiFi.RSSI(i));
-  // }
-  // WiFi.scanComplete();
-  //WiFi.disconnect();
+  Serial.println();
+  Serial.print("Scanning networks ");
+  int n = WiFi.scanNetworks();
+  Serial.println("Done. Printing network list ");
+  for (int i = 0; i < n; i++)
+  {
+    Serial.print(WiFi.SSID(i));
+    Serial.print("  ");
+     Serial.println(WiFi.RSSI(i));
+  }
+  WiFi.scanComplete();
+    // delete old config
+  WiFi.disconnect(true);
+
+  delay(1000);
+
+  WiFi.onEvent(WiFiStationConnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
+  WiFi.onEvent(WiFiGotIP, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_GOT_IP);
+  WiFi.onEvent(WiFiStationDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+
   //WiFi.setHostname("wind");
   WiFi.begin(ssid, password);
-  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+  WiFi.setTxPower(WIFI_POWER_15dBm);
   Serial.print("Connecting to WiFi ..");
-  int x = 0;
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print('.');
-    delay(100);
-    if(x>500){
-      Serial.println(" failed to connect, retrying");
-      x=0;
-     // ESP.restart();
-    }
-    x++;
-  }
-  Serial.println(WiFi.localIP());
+  // int x = 0;
+  // while (WiFi.status() != WL_CONNECTED) {
+  //   Serial.print('.');
+  //   delay(100);
+  //   if(x>500){
+  //     Serial.println(" failed to connect, retrying");
+  //     x=0;
+  //     //ESP.restart();
+  //   }
+  //   x++;
+  // }
+  
 }
 
 void initWebServer(){
@@ -234,27 +266,28 @@ void initN2K(){
 void setup() {
 
   Serial.begin(115200);
-  initWiFi();
-  initLittleFS();
-  initWebServer();
+  
   initN2K();
- 
 
   // Initialize Modbus communication on serial 1
-  //modSerial.begin(115200, SERIAL_8N1, ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN);
-  //modbus.init(MODE, false);
-  //modbus.setTimeout(MODBUS_TIMEOUT);
+  modSerial.begin(9600, SERIAL_8N1, ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN);
+  modbus.init(MODE, false);
+  modbus.setTimeout(MODBUS_TIMEOUT);
   t=millis();
     // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BLUE, OUTPUT);
   digitalWrite(LED_BLUE, LOW);
   NMEA2000.Open();
+
+  initWiFi();
+  initLittleFS();
+  initWebServer();
 }
 
 
 // *****************************************************************************
 void loop() {
-  //queryModbus();
+  queryModbus();
   sendN2kWind();
   NMEA2000.ParseMessages();
   //check node address
@@ -296,7 +329,7 @@ void queryModbus() {
     if(DEBUG)Serial.println(" found..");
     aws_raw = modbus.uint16(0);  // Read wind speed, m/s * 100, aka 293 = 2.93m/s
     aws_ms = aws_raw / 100.0;
-    aws = aws_ms; // m/s * 1.943844;     //knots
+    aws = aws_ms * 1.943844;     //knots
     awa_raw = modbus.uint16(1);  // Read direction, deg clockwise from N mark. deg *10, eg 2345 = 234.5deg
     //awa = (awa_raw / 10.0) - 180.0;
     last_awa = awa;
@@ -330,8 +363,7 @@ float deAverageAwa(){
   //Serial.print(diff);
   //Serial.print(", new_awa = ");
   //Serial.println(new_awa);
-  //return new_awa;
-  return 45.0;
+  return new_awa;
 }
 
 
@@ -343,8 +375,7 @@ double readWindAngle() {
 // *****************************************************************************
 double readWindSpeed() {
   //in m/s
-  //return aws_ms; // Read here the wind speed e.g. from analog input
-  return 20.0;
+  return aws_ms; // Read here the wind speed e.g. from analog input
 }
 
 // *****************************************************************************

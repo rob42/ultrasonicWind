@@ -75,7 +75,7 @@ var gaugeAwa = new RadialGauge({
 }).draw();
   
 // Create aws Gauge
-var gaugeAws = new RadialGauge({
+/*var gaugeAws = new RadialGauge({
   renderTo: 'gauge-aws',
   width: 300,
   height: 300,
@@ -126,6 +126,9 @@ var gaugeAws = new RadialGauge({
   animationDuration: 300,
   animationRule: "linear"
 }).draw();
+*/
+
+var labelAws = document.getElementById('label-aws');
 
 // Function to get current readings on the webpage when it loads for the first time
 function getReadings(){
@@ -137,7 +140,7 @@ function getReadings(){
       var awa = myObj.awa;
       var aws = myObj.aws;
       gaugeAwa.value = awa;
-      gaugeAws.value = aws;
+      labelAws.textContent = aws.toFixed(1);
     }
   }; 
   xhr.open("GET", "/readings", true);
@@ -166,6 +169,7 @@ if (!!window.EventSource) {
     var myObj = JSON.parse(e.data);
     console.log(myObj);
     gaugeAwa.value = myObj.awa;
-    gaugeAws.value = myObj.aws;
+    var aws = myObj.aws;
+    labelAws.textContent = aws.toFixed(1);
   }, false);
 }

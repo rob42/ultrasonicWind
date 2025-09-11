@@ -5,21 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" type="text/css" href="style.css">
-    <script src="http://cdn.rawgit.com/Mikhus/canvas-gauges/gh-pages/download/2.1.7/all/gauge.min.js"></script>
+    <script src="gauge.min.js"></script>
   </head>
   <body>
     <div class="topnav">
-      <h1>ESP WEB SERVER GAUGES</h1>
+      <h1>WIND GAUGES</h1>
     </div>
     <div class="content">
       <div class="card-grid">
         <div class="card">
-          <p class="card-title">Temperature</p>
-          <canvas id="gauge-temperature"></canvas>
+          <p class="card-title">AWA</p>
+          <canvas id="gauge-awa"></canvas>
         </div>
         <div class="card">
-          <p class="card-title">Humidity</p>
-          <canvas id="gauge-humidity"></canvas>
+          <p class="card-title">AWS</p>
+          <canvas id="gauge-aws"></canvas>
         </div>
       </div>
     </div>
