@@ -29,7 +29,7 @@ public:
             String json = JSON.stringify(readings);
             request->send(200, "application/json", json); });
         events.onConnect([](AsyncEventSourceClient *client)
-                         {
+                {
             if(client->lastId()) {
                 Serial.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
             }

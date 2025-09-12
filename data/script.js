@@ -74,59 +74,6 @@ var gaugeAwa = new RadialGauge({
   animationRule: "linear"
 }).draw();
   
-// Create aws Gauge
-/*var gaugeAws = new RadialGauge({
-  renderTo: 'gauge-aws',
-  width: 300,
-  height: 300,
-  units: "Knots",
-  minValue: 0,
-  maxValue: 60,
-  colorValueBoxRect: "#049faa",
-  colorValueBoxRectEnd: "#049faa",
-  colorValueBoxBackground: "#f1fbfc",
-  valueInt: 2,
-  valueDec: 0,
-  //fontValueSize: "50rem",
-  majorTicks: [
-      "0",
-      "10",
-      "20",
-      "30",
-      "40",
-      "50",
-      "60"
-
-  ],
-  minorTicks: 5,
-  strokeTicks: true,
-  highlights: [
-  	{
-          "from": 30,
-          "to": 45,
-          "color": "#ff8c1a"
-      },
-      {
-          "from": 45,
-          "to": 60,
-          "color": "#e60000"
-      }
-  ],
-  colorPlate: "#fff",
-  borderShadowWidth: 0,
-  borders: false,
-  needleType: "line",
-  colorNeedle: "#007F80",
-  colorNeedleEnd: "#007F80",
-  needleWidth: 2,
-  needleCircleSize: 3,
-  colorNeedleCircleOuter: "#007F80",
-  needleCircleOuter: true,
-  needleCircleInner: false,
-  animationDuration: 300,
-  animationRule: "linear"
-}).draw();
-*/
 
 var labelAws = document.getElementById('label-aws');
 
@@ -140,6 +87,7 @@ function getReadings(){
       var awa = myObj.awa;
       var aws = myObj.aws;
       gaugeAwa.value = awa;
+      gaugeAwa.update({ valueText: awa, animationDuration: 300 });
       labelAws.textContent = aws.toFixed(1);
     }
   }; 
@@ -169,6 +117,7 @@ if (!!window.EventSource) {
     var myObj = JSON.parse(e.data);
     console.log(myObj);
     gaugeAwa.value = myObj.awa;
+    gaugeAwa.update({ valueText: awa, animationDuration: 300 })
     var aws = myObj.aws;
     labelAws.textContent = aws.toFixed(1);
   }, false);

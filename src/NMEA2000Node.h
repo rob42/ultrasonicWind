@@ -41,9 +41,10 @@ public:
         nodeAddress = getStoredNodeAddress();
         NMEA2000.SetMode(tNMEA2000::N2km_ListenAndNode, nodeAddress);
         NMEA2000.EnableForward(true);
-        static const unsigned long transmitMessages[] PROGMEM = {130306L, 0};
+        
+        static const unsigned long transmitMessages[] PROGMEM = {130306L, 0}; // Wind
         NMEA2000.ExtendTransmitMessages(transmitMessages);
-        // NMEA2000.SetOnOpen([this]() { this->OnN2kOpen(); });
+       
     }
     void setOnOpen(void (*onOpenFunc)())
     {
