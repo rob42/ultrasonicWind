@@ -86,9 +86,10 @@ function getReadings(){
       console.log(myObj);
       var awa = myObj.awa;
       var aws = myObj.aws;
-      gaugeAwa.value = awa;
-      gaugeAwa.update({ valueText: awa, animationDuration: 300 });
       labelAws.textContent = aws.toFixed(1);
+      gaugeAwa.value = awa;
+      gaugeAwa.update({ valueText: myObj.awa, animationDuration: 300 });
+      
     }
   }; 
   xhr.open("GET", "/readings", true);
@@ -116,9 +117,10 @@ if (!!window.EventSource) {
     console.log("new_readings", e.data);
     var myObj = JSON.parse(e.data);
     console.log(myObj);
-    gaugeAwa.value = myObj.awa;
-    gaugeAwa.update({ valueText: awa, animationDuration: 300 })
     var aws = myObj.aws;
     labelAws.textContent = aws.toFixed(1);
+    gaugeAwa.value = myObj.awa;
+    gaugeAwa.update({ valueText: myObj.awa, animationDuration: 300 })
+    
   }, false);
 }
