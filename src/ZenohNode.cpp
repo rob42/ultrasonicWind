@@ -1,5 +1,8 @@
 #include "ZenohNode.h"
 
+z_owned_session_t z_s;
+z_owned_publisher_t z_pub;
+
 ZenohNode::ZenohNode()
   : running(false), callback(nullptr)
 {
@@ -12,15 +15,48 @@ ZenohNode::~ZenohNode()
 
 bool ZenohNode::begin(const char* locator)
 {
-  // Placeholder initialization logic.
-  // Replace with real Zenoh initialization code.
-  if (locator && strlen(locator) > 0) {
-    // Use locator if provided (debug print for now)
-    Serial.print("ZenohNode: initializing with locator: ");
-    Serial.println(locator);
-  } else {
-    Serial.println("ZenohNode: initializing with default configuration");
-  }
+  // Initialize Zenoh Session and other parameters
+    z_owned_config_t config;
+    z_config_default(&config);
+    zp_config_insert(z_config_loan_mut(&config), Z_CONFIG_MODE_KEY, ZENOH_MODE);
+    if (strcmp(LOCATOR, "") != 0) {
+        if (strcmp(ZENOH_MODE, "client") == 0) {
+            zp_config_insert(z_config_loan_mut(&config), Z_CONFIG_CONNECT_KEY, LOCATOR);
+        } else {
+            zp_config_insert(z_config_loan_mut(&config), Z_CONFIG_LISTEN_KEY, LOCATOR);
+        }
+    }
+
+    // Open Zenoh session
+    Serial.print("Opening Zenoh Session...");
+    if (z_open(&z_s, z_config_move(&config), NULL) < 0) {
+        Serial.println("Unable to open session!");
+        return false;
+    }
+    Serial.println("OK");
+
+    // Start read and lease tasks for zenoh-pico
+    if (zp_start_read_task(z_session_loan_mut(&z_s), NULL) < 0 || zp_start_lease_task(z_session_loan_mut(&z_s), NULL) < 0) {
+        Serial.println("Unable to start read and lease tasks\n");
+        z_session_drop(z_session_move(&z_s));
+        return false;
+    }
+
+    // Declare Zenoh publisher
+    Serial.print("Declaring publisher for ");
+    Serial.print(KEYEXPR);
+    Serial.println("...");
+    z_view_keyexpr_t ke;
+    z_view_keyexpr_from_str_unchecked(&ke, KEYEXPR);
+    if (z_declare_publisher(z_session_loan(&z_s), &z_pub, z_view_keyexpr_loan(&ke), NULL) < 0) {
+        Serial.println("Unable to declare publisher for key expression!");
+        return false;
+    }
+    Serial.println("OK");
+    Serial.println("Zenoh setup finished!");
+
+    delay(300);
+
 
   bool ok = initTransport(locator);
   running = ok;
@@ -36,7 +72,7 @@ void ZenohNode::end()
   running = false;
 }
 
-bool ZenohNode::publish(const char* topic, const uint8_t* payload, size_t len)
+bool ZenohNode::publish(const char* topic, const char* payloadBuf, size_t len)
 {
   if (!running) return false;
   // Replace with actual publish logic.
@@ -45,13 +81,21 @@ bool ZenohNode::publish(const char* topic, const uint8_t* payload, size_t len)
   Serial.print(" (");
   Serial.print(len);
   Serial.println(" bytes)");
+
+  z_owned_bytes_t payload;
+  z_bytes_copy_from_str(&payload, payloadBuf);
+
+  if (z_publisher_put(z_publisher_loan(&z_pub), z_bytes_move(&payload), NULL) < 0) {
+      Serial.println("Error while publishing data");
+  }
+
   // For now we assume publish succeeds.
   return true;
 }
 
 bool ZenohNode::publish(const char* topic, const char* payload)
 {
-  return publish(topic, (const uint8_t*)payload, strlen(payload));
+  return publish(topic, (const char*)payload, strlen(payload));
 }
 
 bool ZenohNode::subscribe(const char* topic, ZenohMessageCallback cb)

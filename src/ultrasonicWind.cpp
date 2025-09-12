@@ -44,8 +44,6 @@
 #define MODE 5                // DE/RE pin, not used
 #define DEBUG 0
 
-#define KEYEXPR "demo/example/zenoh-pico-pub"
-
 ZenohNode zenoh;
 
 // web server
@@ -111,7 +109,7 @@ void initLittleFS()
 
 
 // Simple message callback matching ZenohMessageCallback
-void onZenohMessage(const char *topic, const uint8_t *payload, size_t len)
+void onZenohMessage(const char *topic, const char *payload, size_t len)
 {
   Serial.print("Received on [");
   Serial.print(topic);
@@ -136,9 +134,11 @@ void initZenoh()
     }
   }
   // Subscribe to a topic
-  if (zenoh.subscribe("sensors/temperature", onZenohMessage))
+  if (zenoh.subscribe("navigation/courseOverGround", onZenohMessage) 
+      && zenoh.subscribe("navigation/speedOverGround", onZenohMessage))
   {
-    Serial.println("Subscribed to sensors/temperature");
+    Serial.println("Subscribed to navigation/courseOverGround");
+    Serial.println("Subscribed to navigation/speedOverGround");
   }
   else
   {
@@ -169,25 +169,8 @@ void processZenoh()
   }
 }
 
-
-
-extern "C++" {
-  void setup();
-  void loop();
-}
-
-void setup()
+void initOTA()
 {
-  Serial.begin(115200);
-  nmea2000Node.init();
-  nmea2000Node.setOnOpen(OnN2kOpen);
-  modbusNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
-  nmea2000Node.open();
-  wifiNode.init();
-  initLittleFS();
-  initZenoh();
-  webServer.init();
-  
   // Hostname defaults to esp3232-[MAC]
   ArduinoOTA.setHostname("wind");
 
@@ -225,6 +208,26 @@ void setup()
     });
 
   ArduinoOTA.begin();
+}
+
+extern "C++" {
+  void setup();
+  void loop();
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  nmea2000Node.init();
+  nmea2000Node.setOnOpen(OnN2kOpen);
+  modbusNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
+  nmea2000Node.open();
+  wifiNode.init();
+  initLittleFS();
+  initZenoh();
+  webServer.init();
+  initOTA();
+  
 }
 
 // *****************************************************************************

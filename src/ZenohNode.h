@@ -4,8 +4,22 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <zenoh-pico.h>
 
-typedef void (*ZenohMessageCallback)(const char* topic, const uint8_t* payload, size_t len);
+// Client mode values (comment/uncomment as needed)
+//#define ZENOH_MODE "client"
+//#define LOCATOR ""  // If empty, it will scout
+// Peer mode values (comment/uncomment as needed)
+#define ZENOH_MODE "peer"
+#define LOCATOR "tcp/192.168.1.125:7447" //udp/224.0.0.225:7447"
+
+#define KEYEXPR "environment/wind"
+#define VALUE "[ARDUINO]{ESP32} Publication from Zenoh-Pico!"
+
+
+static int idx = 0;
+
+typedef void (*ZenohMessageCallback)(const char* topic, const char* payload, size_t len);
 
 /*
   ZenohNode
@@ -27,7 +41,7 @@ public:
 
   // Publish a raw payload to a topic.
   // Returns true on success.
-  bool publish(const char* topic, const uint8_t* payload, size_t len);
+  bool publish(const char* topic, const char* payload, size_t len);
 
   // Convenience overload for null-terminated payloads (strings).
   bool publish(const char* topic, const char* payload);
