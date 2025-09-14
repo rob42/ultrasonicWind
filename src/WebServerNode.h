@@ -1,12 +1,13 @@
-#ifndef WEBSERVER_H
-#define WEBSERVER_H
+#ifndef WEBSERVERNODE_H
+#define WEBSERVERNODE_H
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 #include <Arduino_JSON.h>
 #include <functional>
 #include <PicoSyslog.h>
-#include <ultrasonicWind.h>
+
+extern PicoSyslog::Logger syslog;
 
 class WebServer
 {
@@ -25,6 +26,15 @@ public:
     WebServer() : server(80), events("/events") {}
     void init()
     {
+        // Initialize LittleFS
+        if (!LittleFS.begin())
+        {
+            syslog.println("An error has occurred while mounting LittleFS");
+            return;
+        }
+        syslog.println("LittleFS mounted successfully");
+
+
         syslog.print("Starting webserver...");
         server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
                   { request->send(LittleFS, "/index.html", "text/html"); });

@@ -5,13 +5,12 @@
 #include <N2kMessages.h>
 #include <Preferences.h>
 #include <PicoSyslog.h>
-#include <ultrasonicWind.h>
 
-
+extern PicoSyslog::Logger syslog;
+extern Preferences preferences;
 class NMEA2000Node
 {
 public:
-    Preferences preferences;
     
     int nodeAddress;
 

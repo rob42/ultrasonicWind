@@ -1,6 +1,7 @@
 #ifndef WIFINODE_H
 #define WIFINODE_H
 #include <WiFi.h>
+#include <esp_mac.h>
 
 class WifiNode {
   public:

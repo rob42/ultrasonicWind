@@ -6,9 +6,9 @@
 #include <stddef.h>
 #include <zenoh-pico.h>
 #include <PicoSyslog.h>
-#include <ultrasonicWind.h>
 
 static int idx = 0;
+extern PicoSyslog::Logger syslog;
 
 typedef void (*ZenohMessageCallback)(const char* topic, const char* payload, size_t len);
 

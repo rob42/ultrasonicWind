@@ -19,8 +19,16 @@
 // zenoh key that is published.
 #define KEYEXPR "environment/wind"
 
+#include <Arduino_JSON.h>
+#include <ArduinoOTA.h>
+#include "ZenohNode.h"
+#include "WifiNode.h"
+#include "NMEA2000Node.h"
+#include "ModbusNode.h"
+#include "WebServerNode.h"
 #include <PicoSyslog.h>
 
 extern PicoSyslog::Logger syslog;
+extern Preferences preferences;
 
 #endif

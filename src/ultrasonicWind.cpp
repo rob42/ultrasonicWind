@@ -19,34 +19,13 @@
 
 #define LED_BLUE 8 // blue LED pin
 #include <Arduino.h>
-#include <N2kMsg.h>
-#include <N2kMessages.h>
-#include <Modbus.h>
-#include <HardwareSerial.h>
-#include <esp_mac.h>
 #include <Preferences.h>
-#include <WiFi.h>
-#include <ESPAsyncWebServer.h>
-#include <LittleFS.h>
-#include <Arduino_JSON.h>
-#include <ArduinoOTA.h>
-#include "ZenohNode.h"
-#include "WifiNode.h"
-#include "NMEA2000Node.h"
-#include "ModbusNode.h"
-#include "WebServer.h"
-#include <PicoSyslog.h>
 #include <ultrasonicWind.h>
 
-// modbus
-#define MODBUS_SLAVE_ID 1 // default is 0xFF, change via modbus-cli, ~/.local/bin/modbus -s 0 -b 9600 /dev/ttyUSB0 0=1 -v
-#define MODBUS_TIMEOUT 50
-#define WIND_SPEED_REG 0x000C // Assuming starting register address for wind speed
-#define DIRECTION_REG 0x000D  // Assuming starting register address for direction
-#define MODE 5                // DE/RE pin, not used
-#define DEBUG 1
 
 PicoSyslog::Logger syslog;
+Preferences preferences;
+    
 
 ZenohNode zenoh;
 
@@ -101,16 +80,6 @@ float deAverageAwa()
 }
 
 
-// Initialize LittleFS
-void initLittleFS()
-{
-  if (!LittleFS.begin())
-  {
-    syslog.println("An error has occurred while mounting LittleFS");
-    return;
-  }
-  syslog.println("LittleFS mounted successfully");
-}
 
 
 // Simple message callback matching ZenohMessageCallback
@@ -233,23 +202,18 @@ void setup()
   delay(1000);
   syslog.println("Wifi connected");
   
- 
+  initOTA();
 //  delay(4000);
   webServer.init();
 
-  initOTA();
+  modbusNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
 
   nmea2000Node.init();
   nmea2000Node.setOnOpen(OnN2kOpen);
   nmea2000Node.open();
 
-  initLittleFS();
-
   initZenoh();
 
-  modbusNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
-  
-  
 }
 
 // *****************************************************************************
