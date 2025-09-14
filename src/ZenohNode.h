@@ -5,21 +5,13 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <zenoh-pico.h>
-
-// Client mode values (comment/uncomment as needed)
-//#define ZENOH_MODE "client"
-//#define LOCATOR ""  // If empty, it will scout
-// Peer mode values (comment/uncomment as needed)
-#define ZENOH_MODE "peer"
-#define LOCATOR "tcp/192.168.1.125:7447" //udp/224.0.0.225:7447"
-
-#define KEYEXPR "environment/wind"
-#define VALUE "[ARDUINO]{ESP32} Publication from Zenoh-Pico!"
+#include <PicoSyslog.h>
 
 
 static int idx = 0;
 
 typedef void (*ZenohMessageCallback)(const char* topic, const char* payload, size_t len);
+
 
 /*
   ZenohNode
@@ -29,12 +21,14 @@ typedef void (*ZenohMessageCallback)(const char* topic, const char* payload, siz
 
 class ZenohNode {
 public:
+  PicoSyslog::Logger syslog;
   ZenohNode();
   ~ZenohNode();
 
-  // Initialize the Zenoh node. Optionally provide a locator/url.
+ // void setSyslogIP(const char* ip);
+  // Initialize the Zenoh node. Optionally provide a locator/url. mode, and keyExpr
   // Returns true on success.
-  bool begin(const char* locator = nullptr);
+  bool begin(const char* locator = nullptr,const char* mode = "client",const char* keyExpr = "test/test");
 
   // Stop the node and free resources.
   void end();
@@ -59,6 +53,7 @@ public:
 private:
   bool running;
   ZenohMessageCallback callback;
+  
 
   // Internal helpers (stubs / placeholders)
   bool initTransport(const char* locator);

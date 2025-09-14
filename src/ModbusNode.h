@@ -2,8 +2,10 @@
 #define MODBUSNODE_H
 #include <Modbus.h>
 #include <HardwareSerial.h>
+#include <PicoSyslog.h>
 class ModbusNode {
 public:
+    PicoSyslog::Logger syslog;
     HardwareSerial& modSerial;
     Modbus modbus;
     int aws_raw = 0;
@@ -15,14 +17,17 @@ public:
     long t = 0;
     bool blink = LOW;
     int ledPin;
-    ModbusNode(HardwareSerial& serial, int ledPin) : modSerial(serial), modbus(serial), ledPin(ledPin) {}
+    ModbusNode(HardwareSerial& serial, int ledPin) : modSerial(serial), modbus(serial), ledPin(ledPin){}
+
     void init(int rxPin, int txPin, int mode, int timeout) {
+        syslog.println("Starting modbus");
         modSerial.begin(9600, SERIAL_8N1, rxPin, txPin);
         modbus.init(mode, false);
         modbus.setTimeout(timeout);
         t = millis();
         pinMode(ledPin, OUTPUT);
         digitalWrite(ledPin, LOW);
+        syslog.println("Started modbus ; OK");
     }
     void query(int slaveId, int windSpeedReg, int directionReg, int debug) {
         if ((millis() - t) < 999L) {
@@ -31,9 +36,9 @@ public:
         blink = !blink;
         digitalWrite(ledPin, blink);
         t = millis();
-        if (debug) Serial.println("Query modbus");
+        if (debug) syslog.println("Query modbus");
         if (modbus.requestFrom(slaveId, 0x03, windSpeedReg, 2) > 0) {
-            if (debug) Serial.println(" found..");
+            if (debug) syslog.println(" found..");
             aws_raw = modbus.uint16(0);
             aws_ms = aws_raw / 100.0;
             aws = aws_ms * 1.943844;
@@ -41,8 +46,9 @@ public:
             last_awa = awa;
             awa = (awa_raw / 10.0);
         } else {
-            Serial.println("Modbus read failed, retrying...");
+            syslog.println("Modbus read failed, retrying...");
         }
     }
+    
 };
 #endif

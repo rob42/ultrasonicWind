@@ -5,9 +5,14 @@
 #include <LittleFS.h>
 #include <Arduino_JSON.h>
 #include <functional>
+#include <PicoSyslog.h>
+
 class WebServer
 {
 public:
+
+    PicoSyslog::Logger syslog;
+    
     // Create AsyncWebServer object on port 80
     AsyncWebServer server;
 
@@ -21,6 +26,7 @@ public:
     WebServer() : server(80), events("/events") {}
     void init()
     {
+        syslog.print("Starting webserver...");
         server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
                   { request->send(LittleFS, "/index.html", "text/html"); });
         server.serveStatic("/", LittleFS, "/");
@@ -36,6 +42,7 @@ public:
             client->send("hello!", NULL, millis(), 10000); });
         server.addHandler(&events);
         server.begin();
+        syslog.println("OK");
     }
     void update()
     {

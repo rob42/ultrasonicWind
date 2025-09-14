@@ -35,6 +35,7 @@
 #include "NMEA2000Node.h"
 #include "ModbusNode.h"
 #include "WebServer.h"
+#include <PicoSyslog.h>
 
 // modbus
 #define MODBUS_SLAVE_ID 1 // default is 0xFF, change via modbus-cli, ~/.local/bin/modbus -s 0 -b 9600 /dev/ttyUSB0 0=1 -v
@@ -42,7 +43,24 @@
 #define WIND_SPEED_REG 0x000C // Assuming starting register address for wind speed
 #define DIRECTION_REG 0x000D  // Assuming starting register address for direction
 #define MODE 5                // DE/RE pin, not used
-#define DEBUG 0
+#define DEBUG 1
+#define RSYSLOG_IP "192.168.1.125"
+
+//zenoh
+
+// Client mode values (comment/uncomment as needed)
+//#define ZENOH_MODE "peer"
+//#define LOCATOR "tcp/224.0.0.224:7447"
+//#define LOCATOR ""  // If empty, it will scout
+// Peer mode values (comment/uncomment as needed)
+#define ZENOH_MODE "client"
+#define ZENOH_LOCATOR "tcp/192.168.1.125:7447" 
+
+//#define LOCATOR ""
+#define KEYEXPR "environment/wind"
+//#define VALUE "[ARDUINO]{ESP32} Publication from Zenoh-Pico!"
+
+PicoSyslog::Logger syslog;
 
 ZenohNode zenoh;
 
@@ -102,47 +120,44 @@ void initLittleFS()
 {
   if (!LittleFS.begin())
   {
-    Serial.println("An error has occurred while mounting LittleFS");
+    syslog.println("An error has occurred while mounting LittleFS");
   }
-  Serial.println("LittleFS mounted successfully");
+  syslog.println("LittleFS mounted successfully");
 }
 
 
 // Simple message callback matching ZenohMessageCallback
 void onZenohMessage(const char *topic, const char *payload, size_t len)
 {
-  Serial.print("Received on [");
-  Serial.print(topic);
-  Serial.print("]: ");
+  syslog.print("Received on [");
+  syslog.print(topic);
+  syslog.print("]: ");
 
   // Print payload as text (safe only for text payloads)
   for (size_t i = 0; i < len; ++i)
   {
-    Serial.write(payload[i]);
+    syslog.print(payload[i]);
   }
-  Serial.println();
+  syslog.println();
 }
 
 void initZenoh()
 {
-  if (!zenoh.begin())
+  if (!zenoh.begin(ZENOH_LOCATOR,ZENOH_MODE, KEYEXPR))
   {
-    Serial.println("Zenoh setup failed!");
-    while (1)
-    {
-      ;
-    }
+    syslog.println("Zenoh setup failed!");
+   
   }
   // Subscribe to a topic
   if (zenoh.subscribe("navigation/courseOverGround", onZenohMessage) 
       && zenoh.subscribe("navigation/speedOverGround", onZenohMessage))
   {
-    Serial.println("Subscribed to navigation/courseOverGround");
-    Serial.println("Subscribed to navigation/speedOverGround");
+    syslog.println("Subscribed to navigation/courseOverGround");
+    syslog.println("Subscribed to navigation/speedOverGround");
   }
   else
   {
-    Serial.println("Subscribe failed");
+    syslog.println("Subscribe failed");
   }
 }
 
@@ -158,12 +173,12 @@ void processZenoh()
     // Use the raw-payload publish overload
     if (zenoh.publish("environment/wind", JSON.stringify(readings).c_str()))
     {
-      Serial.println("Published wind update");
-      Serial.println(JSON.stringify(readings));
+      syslog.println("Published wind update");
+      syslog.println(JSON.stringify(readings));
     }
     else
     {
-      Serial.println("Publish failed (node not running?)");
+      syslog.println("Publish failed (node not running?)");
     }
     zenohLastTime = millis();
   }
@@ -190,21 +205,21 @@ void initOTA()
         type = "filesystem";
 
       // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      Serial.println("Start updating " + type);
+      syslog.println("Start updating " + type);
     })
     .onEnd([]() {
-      Serial.println("\nEnd");
+      syslog.println("\nEnd");
     })
     .onProgress([](unsigned int progress, unsigned int total) {
-      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+      syslog.printf("Progress: %u%%\r", (progress / (total / 100)));
     })
     .onError([](ota_error_t error) {
-      Serial.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+      syslog.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) syslog.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) syslog.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) syslog.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) syslog.println("Receive Failed");
+      else if (error == OTA_END_ERROR) syslog.println("End Failed");
     });
 
   ArduinoOTA.begin();
@@ -218,11 +233,25 @@ extern "C++" {
 void setup()
 {
   Serial.begin(115200);
+  syslog.server = RSYSLOG_IP;
+  modbusNode.syslog.server = RSYSLOG_IP;
+  nmea2000Node.syslog.server = RSYSLOG_IP;
+  zenoh.syslog.server = RSYSLOG_IP;
+  webServer.syslog.server = RSYSLOG_IP;
+  wifiNode.init();
+  //wait for connection
+  while(!wifiNode.isConnected() || !wifiNode.ready){
+    delay(10);
+  }
+  delay(2000);
+  syslog.println("Wifi connected");
+ 
+  delay(4000);
   nmea2000Node.init();
   nmea2000Node.setOnOpen(OnN2kOpen);
+  
   modbusNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
   nmea2000Node.open();
-  wifiNode.init();
   initLittleFS();
   initZenoh();
   webServer.init();
