@@ -6,12 +6,11 @@
 #include <Arduino_JSON.h>
 #include <functional>
 #include <PicoSyslog.h>
+#include <ultrasonicWind.h>
 
 class WebServer
 {
 public:
-
-    PicoSyslog::Logger syslog;
     
     // Create AsyncWebServer object on port 80
     AsyncWebServer server;

@@ -5,11 +5,14 @@
 #include <N2kMessages.h>
 #include <Preferences.h>
 #include <PicoSyslog.h>
+#include <ultrasonicWind.h>
+
+
 class NMEA2000Node
 {
 public:
     Preferences preferences;
-    PicoSyslog::Logger syslog;
+    
     int nodeAddress;
 
     int seq;

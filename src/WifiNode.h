@@ -1,6 +1,7 @@
 #ifndef WIFINODE_H
 #define WIFINODE_H
 #include <WiFi.h>
+
 class WifiNode {
   public:
     const char* ssid;

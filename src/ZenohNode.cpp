@@ -29,6 +29,7 @@ bool ZenohNode::begin(const char* locator, const char* mode, const char* keyExpr
         }
     }
     syslog.println("OK");
+    
     // Open Zenoh session
     syslog.print("Opening Zenoh Session...");
     if (z_open(&z_s, z_config_move(&config), NULL) < 0) {

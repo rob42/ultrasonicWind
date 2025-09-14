@@ -3,9 +3,11 @@
 #include <Modbus.h>
 #include <HardwareSerial.h>
 #include <PicoSyslog.h>
+#include <ultrasonicWind.h>
+
 class ModbusNode {
 public:
-    PicoSyslog::Logger syslog;
+    
     HardwareSerial& modSerial;
     Modbus modbus;
     int aws_raw = 0;

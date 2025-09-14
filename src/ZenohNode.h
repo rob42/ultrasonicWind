@@ -6,11 +6,12 @@
 #include <stddef.h>
 #include <zenoh-pico.h>
 #include <PicoSyslog.h>
-
+#include <ultrasonicWind.h>
 
 static int idx = 0;
 
 typedef void (*ZenohMessageCallback)(const char* topic, const char* payload, size_t len);
+
 
 
 /*
@@ -21,7 +22,7 @@ typedef void (*ZenohMessageCallback)(const char* topic, const char* payload, siz
 
 class ZenohNode {
 public:
-  PicoSyslog::Logger syslog;
+  
   ZenohNode();
   ~ZenohNode();
 

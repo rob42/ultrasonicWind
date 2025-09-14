@@ -36,6 +36,7 @@
 #include "ModbusNode.h"
 #include "WebServer.h"
 #include <PicoSyslog.h>
+#include <ultrasonicWind.h>
 
 // modbus
 #define MODBUS_SLAVE_ID 1 // default is 0xFF, change via modbus-cli, ~/.local/bin/modbus -s 0 -b 9600 /dev/ttyUSB0 0=1 -v
@@ -44,21 +45,6 @@
 #define DIRECTION_REG 0x000D  // Assuming starting register address for direction
 #define MODE 5                // DE/RE pin, not used
 #define DEBUG 1
-#define RSYSLOG_IP "192.168.1.125"
-
-//zenoh
-
-// Client mode values (comment/uncomment as needed)
-//#define ZENOH_MODE "peer"
-//#define LOCATOR "tcp/224.0.0.224:7447"
-//#define LOCATOR ""  // If empty, it will scout
-// Peer mode values (comment/uncomment as needed)
-#define ZENOH_MODE "client"
-#define ZENOH_LOCATOR "tcp/192.168.1.125:7447" 
-
-//#define LOCATOR ""
-#define KEYEXPR "environment/wind"
-//#define VALUE "[ARDUINO]{ESP32} Publication from Zenoh-Pico!"
 
 PicoSyslog::Logger syslog;
 
@@ -121,6 +107,7 @@ void initLittleFS()
   if (!LittleFS.begin())
   {
     syslog.println("An error has occurred while mounting LittleFS");
+    return;
   }
   syslog.println("LittleFS mounted successfully");
 }
@@ -146,7 +133,7 @@ void initZenoh()
   if (!zenoh.begin(ZENOH_LOCATOR,ZENOH_MODE, KEYEXPR))
   {
     syslog.println("Zenoh setup failed!");
-   
+    return;
   }
   // Subscribe to a topic
   if (zenoh.subscribe("navigation/courseOverGround", onZenohMessage) 
@@ -179,6 +166,9 @@ void processZenoh()
     else
     {
       syslog.println("Publish failed (node not running?)");
+      if(!zenoh.isRunning()){
+        initZenoh();
+      }
     }
     zenohLastTime = millis();
   }
@@ -234,28 +224,31 @@ void setup()
 {
   Serial.begin(115200);
   syslog.server = RSYSLOG_IP;
-  modbusNode.syslog.server = RSYSLOG_IP;
-  nmea2000Node.syslog.server = RSYSLOG_IP;
-  zenoh.syslog.server = RSYSLOG_IP;
-  webServer.syslog.server = RSYSLOG_IP;
+
   wifiNode.init();
   //wait for connection
   while(!wifiNode.isConnected() || !wifiNode.ready){
     delay(10);
   }
-  delay(2000);
+  delay(1000);
   syslog.println("Wifi connected");
+  
  
-  delay(4000);
+//  delay(4000);
+  webServer.init();
+
+  initOTA();
+
   nmea2000Node.init();
   nmea2000Node.setOnOpen(OnN2kOpen);
-  
-  modbusNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
   nmea2000Node.open();
+
   initLittleFS();
+
   initZenoh();
-  webServer.init();
-  initOTA();
+
+  modbusNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
+  
   
 }
 
