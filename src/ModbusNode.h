@@ -22,10 +22,10 @@ public:
     Modbus modbus;
     int aws_raw = 0;
     int awa_raw = 0;
-    float aws_ms = 0;
-    float aws = 0;
-    float awa = 0;
-    float last_awa = 0;
+    double aws_ms = 0;
+    double aws = 0;
+    double awa = 0;
+    double last_awa = 0;
     long t = 0;
     bool blink = LOW;
     int ledPin;

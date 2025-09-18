@@ -87,10 +87,10 @@ public:
         if (seq == 255)
             seq = 1;
     }
-    void sendWind( double windAngle, float windSpeed)
+    void sendWind( double windAngle, double windSpeed)
     {
         tN2kMsg N2kMsg;
-        SetN2kWindSpeed(N2kMsg, seq, windSpeed, windAngle, N2kWind_Apprent);
+        SetN2kWindSpeed(N2kMsg, seq, windSpeed, windAngle, N2kWind_Apparent);
         if (NMEA2000.SendMsg(N2kMsg))
         {
             syslog.print("Bus ID: ");

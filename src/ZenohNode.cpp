@@ -1,10 +1,12 @@
 #include "ZenohNode.h"
 
-z_owned_session_t z_s;
-z_owned_publisher_t z_pub;
+z_owned_session_t s;
+z_owned_publisher_t pub;
+z_owned_subscriber_t sub;
+ZenohMessageCallback callback;
 
 ZenohNode::ZenohNode()
-  : running(false), callback(nullptr)
+  : running(false) //, callback(nullptr)
 {
 }
 
@@ -32,7 +34,7 @@ bool ZenohNode::begin(const char* locator, const char* mode, const char* keyExpr
     
     // Open Zenoh session
     syslog.print("Opening Zenoh Session...");
-    if (z_open(&z_s, z_config_move(&config), NULL) < 0) {
+    if (z_open(&s, z_config_move(&config), NULL) < 0) {
         syslog.println("Unable to open session!");
         return false;
     }
@@ -40,33 +42,40 @@ bool ZenohNode::begin(const char* locator, const char* mode, const char* keyExpr
     
     syslog.print("Start read and lease tasks...");
     // Start read and lease tasks for zenoh-pico
-    if (zp_start_read_task(z_session_loan_mut(&z_s), NULL) < 0 || zp_start_lease_task(z_session_loan_mut(&z_s), NULL) < 0) {
+    if (zp_start_read_task(z_session_loan_mut(&s), NULL) < 0 || zp_start_lease_task(z_session_loan_mut(&s), NULL) < 0) {
         syslog.println("Unable to start read and lease tasks\n");
-        z_session_drop(z_session_move(&z_s));
+        z_session_drop(z_session_move(&s));
         return false;
     }
     syslog.println("OK");
     
-    // Declare Zenoh publisher
-    syslog.print("Declaring publisher for ");
-    syslog.print(keyExpr);
-    syslog.println("...");
-    z_view_keyexpr_t ke;
-    z_view_keyexpr_from_str_unchecked(&ke, keyExpr);
-    if (z_declare_publisher(z_session_loan(&z_s), &z_pub, z_view_keyexpr_loan(&ke), NULL) < 0) {
-        syslog.println("Unable to declare publisher for key expression!");
-        return false;
-    }
+    declarePublisher(keyExpr);
     syslog.println("OK");
     syslog.println("Zenoh setup finished!");
 
     delay(300);
 
 
-  bool ok = initTransport(locator);
+  bool ok = true;
   running = ok;
   return ok;
 }
+
+bool ZenohNode::declarePublisher(const char* keyExpr){
+  // Declare Zenoh publisher
+    syslog.print("Declaring publisher for ");
+    syslog.print(keyExpr);
+    syslog.println("...");
+    z_view_keyexpr_t ke;
+    z_view_keyexpr_from_str_unchecked(&ke, keyExpr);
+    if (z_declare_publisher(z_session_loan(&s), &pub, z_view_keyexpr_loan(&ke), NULL) < 0) {
+        syslog.println("Unable to declare publisher for key expression!");
+        return false;
+    }
+    syslog.println("OK");
+    return true;
+}
+
 
 void ZenohNode::end()
 {
@@ -90,11 +99,11 @@ bool ZenohNode::publish(const char* topic, const char* payloadBuf, size_t len)
   z_owned_bytes_t payload;
   z_bytes_copy_from_str(&payload, payloadBuf);
 
-  if (z_publisher_put(z_publisher_loan(&z_pub), z_bytes_move(&payload), NULL) < 0) {
+  if (z_publisher_put(z_publisher_loan(&pub), z_bytes_move(&payload), NULL) < 0) {
       syslog.println("Error while publishing data");
+      return false;
   }
-
-  // For now we assume publish succeeds.
+  // Assume publish succeeds.
   return true;
 }
 
@@ -103,44 +112,52 @@ bool ZenohNode::publish(const char* topic, const char* payload)
   return publish(topic, (const char*)payload, strlen(payload));
 }
 
-bool ZenohNode::subscribe(const char* topic, ZenohMessageCallback cb)
-{
-  if (!running) return false;
-  // Store callback and pretend subscription succeeded.
-  callback = cb;
-  syslog.print("ZenohNode: subscribed to ");
-  syslog.println(topic);
-  return true;
+void ZenohNode::data_handler(z_loaned_sample_t *sample, void *arg) {
+    z_view_string_t keystr;
+    z_keyexpr_as_view_string(z_sample_keyexpr(sample), &keystr);
+    z_owned_string_t value;
+    z_bytes_to_string(z_sample_payload(sample), &value);
+
+    syslog.print(" >> [Subscription listener] Received (");
+    syslog.print(z_string_data(z_view_string_loan(&keystr)));
+    syslog.print(", ");
+    syslog.print(z_string_data(z_string_loan(&value)));
+    syslog.println(")");
+    
+   
+    callback(z_string_data(z_view_string_loan(&keystr)),  
+          z_string_data(z_string_loan(&value)),
+          z_string_len(z_string_loan(&value)));
+
+    z_string_drop(z_string_move(&value));
 }
 
-void ZenohNode::poll()
+bool ZenohNode::subscribe(const char* topic, ZenohMessageCallback cb)
 {
-  if (!running) return;
-  // In a real implementation this would poll the Zenoh library for messages.
-  // Here we call handleIncoming() which will invoke the callback if set.
-  handleIncoming();
+
+  if (!running) return false;
+  // Store callback 
+    callback = cb;
+
+    // Declare Zenoh subscriber
+    syslog.print("Declaring Subscriber on ");
+    syslog.print(topic);
+    syslog.println(" ...");
+    z_owned_closure_sample_t sample;
+    
+    z_closure_sample(&sample, data_handler, NULL, NULL);
+    z_view_keyexpr_t ke;
+    z_view_keyexpr_from_str_unchecked(&ke, topic);
+    if (z_declare_subscriber(z_session_loan(&s), &sub, z_view_keyexpr_loan(&ke), z_closure_sample_move(&sample),
+                             NULL) < 0) {
+        syslog.println("Unable to declare subscriber.");
+        return false;
+    }
+    syslog.println("OK");
+  return true;
 }
 
 bool ZenohNode::isRunning() const
 {
   return running;
-}
-
-/* Internal placeholder implementations */
-
-bool ZenohNode::initTransport(const char* /*locator*/)
-{
-  // Replace with actual transport initialization.
-  syslog.println("ZenohNode: initializing transport (stub)");
-  return true;
-}
-
-void ZenohNode::handleIncoming()
-{
-  // Placeholder that does nothing. If you want to simulate an incoming
-  // message for testing, you can call callback here.
-  if (callback) {
-    // Example: no-op; real code would parse received message and invoke callback.
-    // callback("example/topic", (const uint8_t*)"hello", 5);
-  }
 }

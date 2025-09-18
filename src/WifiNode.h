@@ -56,5 +56,12 @@ class WifiNode {
     bool isConnected(){
         return WiFi.isConnected();
     }
+
+    String getIP(){
+        if (isConnected()){
+            return WiFi.localIP().toString();
+        }
+        return "Not connected";
+    }
 };
 #endif

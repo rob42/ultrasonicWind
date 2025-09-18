@@ -63,7 +63,7 @@ public:
         }
     }
 
-    void setSensorReadings(float awa, float aws){
+    void setSensorReadings(double awa, double aws){
         readings["awa"] = awa; // String(bme.readTemperature());
         readings["aws"] = aws; // String(bme.readHumidity());
     }

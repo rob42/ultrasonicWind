@@ -68,18 +68,16 @@ void OnN2kOpen()
   windScheduler.UpdateNextTime();
 }
 
-float deAverageAwa()
+double deAverageAwa()
 {
-  float diff = modbusNode.awa - modbusNode.last_awa;
-  float new_awa = modbusNode.awa + diff;
+  double diff = modbusNode.awa - modbusNode.last_awa;
+  double new_awa = modbusNode.awa + diff;
   if (new_awa >= 360)
     new_awa = new_awa - 360;
   if (new_awa < 0)
     new_awa = new_awa + 360;
   return new_awa;
 }
-
-
 
 
 // Simple message callback matching ZenohMessageCallback
@@ -119,8 +117,6 @@ void initZenoh()
 
 void processZenoh()
 {
-  // Must call poll regularly to let ZenohNode process incoming messages
-  zenoh.poll();
 
   if ((millis() - zenohLastTime) > zenohTimerDelay)
   {
@@ -200,7 +196,8 @@ void setup()
     delay(10);
   }
   delay(1000);
-  syslog.println("Wifi connected");
+  syslog.print("Wifi connected : ");
+  syslog.println(wifiNode.getIP());
   
   initOTA();
 //  delay(4000);

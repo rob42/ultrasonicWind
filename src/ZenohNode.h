@@ -9,20 +9,12 @@
 
 static int idx = 0;
 extern PicoSyslog::Logger syslog;
-
 typedef void (*ZenohMessageCallback)(const char* topic, const char* payload, size_t len);
 
 
-
-/*
-  ZenohNode
-  Lightweight Arduino-facing wrapper for a Zenoh node.
-  This header declares the renamed class ZenohNode (previously ArduinoZenoh).
-*/
-
 class ZenohNode {
 public:
-  
+
   ZenohNode();
   ~ZenohNode();
 
@@ -43,22 +35,22 @@ public:
 
   // Subscribe to a topic; callback will be invoked for received messages.
   // Returns true on success.
-  bool subscribe(const char* topic, ZenohMessageCallback cb);
+  bool subscribe(const char* topic, ZenohMessageCallback cb); 
 
-  // Must be called periodically from loop() to process incoming data.
-  void poll();
+  static void data_handler(z_loaned_sample_t *sample, void *arg);
 
+  bool declarePublisher(const char* keyExpr);
+  
   // Check whether the node is currently running.
   bool isRunning() const;
 
 private:
   bool running;
-  ZenohMessageCallback callback;
+  
   
 
   // Internal helpers (stubs / placeholders)
-  bool initTransport(const char* locator);
-  void handleIncoming();
+  
 };
 
 #endif // ZENOHNODE_H
