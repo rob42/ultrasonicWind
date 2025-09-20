@@ -50,15 +50,15 @@ bool ZenohNode::begin(const char* locator, const char* mode, const char* keyExpr
     syslog.println("OK");
     
     declarePublisher(keyExpr);
-    syslog.println("OK");
+   
     syslog.println("Zenoh setup finished!");
 
     delay(300);
 
 
-  bool ok = true;
-  running = ok;
-  return ok;
+  
+  running = true;
+  return true;
 }
 
 bool ZenohNode::declarePublisher(const char* keyExpr){
@@ -86,18 +86,24 @@ void ZenohNode::end()
   running = false;
 }
 
-bool ZenohNode::publish(const char* topic, const char* payloadBuf, size_t len)
+bool ZenohNode::publish(const char* topic, const char* payloadStr, size_t len)
 {
-  if (!running) return false;
+
+  if (z_session_is_closed(z_session_loan(&s))) {
+    syslog.println("Error: Zenoh is not running");
+    return false;
+  }
   // Replace with actual publish logic.
   syslog.print("ZenohNode: publish to ");
   syslog.print(topic);
+  syslog.print( " : " );
+  syslog.print(payloadStr);
   syslog.print(" (");
   syslog.print(len);
   syslog.println(" bytes)");
 
   z_owned_bytes_t payload;
-  z_bytes_copy_from_str(&payload, payloadBuf);
+  z_bytes_copy_from_str(&payload, payloadStr);
 
   if (z_publisher_put(z_publisher_loan(&pub), z_bytes_move(&payload), NULL) < 0) {
       syslog.println("Error while publishing data");
@@ -159,5 +165,6 @@ bool ZenohNode::subscribe(const char* topic, ZenohMessageCallback cb)
 
 bool ZenohNode::isRunning() const
 {
+  
   return running;
 }

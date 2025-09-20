@@ -37,6 +37,9 @@ const char *password = "foxglove16.4";
 unsigned long zenohLastTime = 0;
 unsigned long zenohTimerDelay = 1000;
 
+#define VALUE "[ARDUINO]{ESP32} Publication from Zenoh-Pico!"
+
+
 // modbus
 HardwareSerial modSerial(1);
 
@@ -120,15 +123,11 @@ void processZenoh()
 
   if ((millis() - zenohLastTime) > zenohTimerDelay)
   {
-    readings["environment"]["wind"]["angleApparent"] = DegToRad(modbusNode.awa); 
+    readings["environment"]["wind"]["angleApparent"] = DegToRad(deAverageAwa()); 
     readings["environment"]["wind"]["speedApparent"] = modbusNode.aws_ms; 
     // Use the raw-payload publish overload
-    if (zenoh.publish("environment/wind", JSON.stringify(readings).c_str()))
-    {
-      syslog.println("Published wind update");
-      syslog.println(JSON.stringify(readings));
-    }
-    else
+
+    if (!zenoh.publish(KEYEXPR, JSON.stringify(readings).c_str()))
     {
       syslog.println("Publish failed (node not running?)");
       if(!zenoh.isRunning()){
@@ -216,11 +215,11 @@ void setup()
 // *****************************************************************************
 void loop()
 {
-  modbusNode.query(MODBUS_SLAVE_ID, WIND_SPEED_REG, DIRECTION_REG, DEBUG);
+  modbusNode.query(MODBUS_SLAVE_ID, WIND_SPEED_REG, DIRECTION_REG, false);
   if (windScheduler.IsTime())
   {
     windScheduler.UpdateNextTime();
-    nmea2000Node.sendWind(DegToRad(deAverageAwa()),modbusNode.aws_ms);
+    nmea2000Node.sendWind(DegToRad(deAverageAwa()),modbusNode.aws_ms, false);
   }
   webServer.setSensorReadings(deAverageAwa(), modbusNode.aws);
   webServer.update();

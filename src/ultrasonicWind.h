@@ -7,7 +7,7 @@
 //zenoh
 
 // Peer mode values (comment/uncomment as needed)
-#define ZENOH_MODE "peer"
+#define ZENOH_MODE "client"
 //#define ZENOH_LOCATOR "udp/224.0.0.123:7447"
 #define ZENOH_LOCATOR ""  
 
