@@ -7,9 +7,9 @@
 //zenoh
 
 // Peer mode values (comment/uncomment as needed)
-#define ZENOH_MODE "client"
-//#define ZENOH_LOCATOR "udp/224.0.0.123:7447"
-#define ZENOH_LOCATOR ""  
+#define ZENOH_MODE "peer"
+#define ZENOH_LOCATOR "udp/224.0.0.123:7447#iface=eth0" //in peer mode it MUST have #iface=eth0
+//scout doesnt work in peer, flips to tcp and crashes.
 
 // Client mode values (comment/uncomment as needed)
 //#define ZENOH_MODE "client"
@@ -28,7 +28,7 @@
 #include "WebServerNode.h"
 #include <PicoSyslog.h>
 
-extern PicoSyslog::Logger syslog;
+//extern PicoSyslog::Logger syslog;
 extern Preferences preferences;
 
 #endif

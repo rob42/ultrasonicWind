@@ -6,7 +6,7 @@
 #include <Preferences.h>
 #include <PicoSyslog.h>
 
-extern PicoSyslog::Logger syslog;
+//extern PicoSyslog::Logger syslog;
 extern Preferences preferences;
 class NMEA2000Node
 {
@@ -23,7 +23,7 @@ public:
         preferences.begin("nvs", false);
         nodeAddress = preferences.getInt("LastNodeAddress", 23);
         preferences.end();
-        syslog.printf("nodeAddress=%d\n", nodeAddress);
+        Serial.printf("nodeAddress=%d\n", nodeAddress);
         return nodeAddress;
     }
     uint32_t getUniqueId()
@@ -38,23 +38,23 @@ public:
     }
     void init()
     {
-        syslog.println("Starting NMEA2000 interface");
+        Serial.println("Starting NMEA2000 interface");
         NMEA2000.SetProductInformation("00000002", 100, "Simple wind monitor", "1.2.0.24 (2022-10-01)", "1.2.0.0 (2022-10-01)");
         NMEA2000.SetDeviceInformation(getUniqueId(), 130, 85, 140);
         NMEA2000.SetForwardStream(&Serial);
         NMEA2000.SetForwardType(tNMEA2000::fwdt_Text);
         nodeAddress = getStoredNodeAddress();
-        syslog.print("NMEA2000 node address = ");
-        syslog.println(nodeAddress, DEC);
+        Serial.print("NMEA2000 node address = ");
+        Serial.println(nodeAddress, DEC);
         NMEA2000.SetMode(tNMEA2000::N2km_ListenAndNode, nodeAddress);
         NMEA2000.EnableForward(true);
-        syslog.println("Started OK");
+        Serial.println("Started OK");
         static const unsigned long transmitMessages[] PROGMEM = {130306L, 0}; // Wind
         NMEA2000.ExtendTransmitMessages(transmitMessages);
-        syslog.print("Extended messages : ");
+        Serial.print("Extended messages : ");
         for(int i = 0; i < sizeof(transmitMessages)/sizeof(long); i++)
             {
-            syslog.println(transmitMessages[i]);
+            Serial.println(transmitMessages[i]);
             }
     }
     void setOnOpen(void (*onOpenFunc)())
@@ -78,7 +78,7 @@ public:
             preferences.begin("nvs", false);
             preferences.putInt("LastNodeAddress", sourceAddress);
             preferences.end();
-            syslog.printf("Address Change: New Address=%d\n", sourceAddress);
+            Serial.printf("Address Change: New Address=%d\n", sourceAddress);
         }
     }
     void incrementSeq()
@@ -94,9 +94,9 @@ public:
         if (NMEA2000.SendMsg(N2kMsg))
         {
             if(debug){
-                syslog.print("Bus ID: ");
-                syslog.print(NMEA2000.GetN2kSource());
-                syslog.println(" sent n2k message");
+                Serial.print("Bus ID: ");
+                Serial.print(NMEA2000.GetN2kSource());
+                Serial.println(" sent n2k message");
             }
         }
         incrementSeq();

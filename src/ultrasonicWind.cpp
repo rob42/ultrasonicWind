@@ -23,7 +23,7 @@
 #include <ultrasonicWind.h>
 
 
-PicoSyslog::Logger syslog;
+//PicoSyslog::Logger syslog;
 Preferences preferences;
     
 
@@ -86,35 +86,35 @@ double deAverageAwa()
 // Simple message callback matching ZenohMessageCallback
 void onZenohMessage(const char *topic, const char *payload, size_t len)
 {
-  syslog.print("Received on [");
-  syslog.print(topic);
-  syslog.print("]: ");
+  Serial.print("Received on [");
+  Serial.print(topic);
+  Serial.print("]: ");
 
   // Print payload as text (safe only for text payloads)
   for (size_t i = 0; i < len; ++i)
   {
-    syslog.print(payload[i]);
+    Serial.print(payload[i]);
   }
-  syslog.println();
+  Serial.println();
 }
 
 void initZenoh()
 {
   if (!zenoh.begin(ZENOH_LOCATOR,ZENOH_MODE, KEYEXPR))
   {
-    syslog.println("Zenoh setup failed!");
+    Serial.println("Zenoh setup failed!");
     return;
   }
   // Subscribe to a topic
   if (zenoh.subscribe("navigation/courseOverGround", onZenohMessage) 
       && zenoh.subscribe("navigation/speedOverGround", onZenohMessage))
   {
-    syslog.println("Subscribed to navigation/courseOverGround");
-    syslog.println("Subscribed to navigation/speedOverGround");
+    Serial.println("Subscribed to navigation/courseOverGround");
+    Serial.println("Subscribed to navigation/speedOverGround");
   }
   else
   {
-    syslog.println("Subscribe failed");
+    Serial.println("Subscribe failed");
   }
 }
 
@@ -129,7 +129,7 @@ void processZenoh()
 
     if (!zenoh.publish(KEYEXPR, JSON.stringify(readings).c_str()))
     {
-      syslog.println("Publish failed (node not running?)");
+      Serial.println("Publish failed (node not running?)");
       if(!zenoh.isRunning()){
         initZenoh();
       }
@@ -159,21 +159,21 @@ void initOTA()
         type = "filesystem";
 
       // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      syslog.println("Start updating " + type);
+      Serial.println("Start updating " + type);
     })
     .onEnd([]() {
-      syslog.println("\nEnd");
+      Serial.println("\nEnd");
     })
     .onProgress([](unsigned int progress, unsigned int total) {
-      syslog.printf("Progress: %u%%\r", (progress / (total / 100)));
+      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
     })
     .onError([](ota_error_t error) {
-      syslog.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) syslog.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) syslog.println("Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) syslog.println("Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) syslog.println("Receive Failed");
-      else if (error == OTA_END_ERROR) syslog.println("End Failed");
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial.println("End Failed");
     });
 
   ArduinoOTA.begin();
@@ -187,7 +187,7 @@ extern "C++" {
 void setup()
 {
   Serial.begin(115200);
-  syslog.server = RSYSLOG_IP;
+  //syslog.server = RSYSLOG_IP;
 
   wifiNode.init();
   //wait for connection
@@ -195,8 +195,8 @@ void setup()
     delay(10);
   }
   delay(1000);
-  syslog.print("Wifi connected : ");
-  syslog.println(wifiNode.getIP());
+  Serial.print("Wifi connected : ");
+  Serial.println(wifiNode.getIP());
   
   initOTA();
 //  delay(4000);

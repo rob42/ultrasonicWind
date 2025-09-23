@@ -7,7 +7,7 @@
 #include <functional>
 #include <PicoSyslog.h>
 
-extern PicoSyslog::Logger syslog;
+//extern PicoSyslog::Logger syslog;
 
 class WebServer
 {
@@ -29,13 +29,13 @@ public:
         // Initialize LittleFS
         if (!LittleFS.begin())
         {
-            syslog.println("An error has occurred while mounting LittleFS");
+            Serial.println("An error has occurred while mounting LittleFS");
             return;
         }
-        syslog.println("LittleFS mounted successfully");
+        Serial.println("LittleFS mounted successfully");
 
 
-        syslog.print("Starting webserver...");
+        Serial.print("Starting webserver...");
         server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
                   { request->send(LittleFS, "/index.html", "text/html"); });
         server.serveStatic("/", LittleFS, "/");
@@ -51,7 +51,7 @@ public:
             client->send("hello!", NULL, millis(), 10000); });
         server.addHandler(&events);
         server.begin();
-        syslog.println("OK");
+        Serial.println("OK");
     }
     void update()
     {
