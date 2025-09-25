@@ -1,9 +1,20 @@
 #ifndef ULTRASONICWIND_H
 #define ULTRASONICWIND_H
 
+#include <Arduino.h>
+#include <Arduino_JSON.h>
+#include <ArduinoOTA.h>
+#include <ZenohNode.h>
+#include <WifiNode.h>
+#include <NMEA2000Node.h>
+#include <WindNode.h>
+#include <WebServerNode.h>
+#include <PicoSyslog.h>
+#include <Preferences.h>
+#include <LittleFS.h>
+
 // remote syslog server for logs
 #define RSYSLOG_IP "192.168.1.125"
-
 //zenoh
 
 // Peer mode values (comment/uncomment as needed)
@@ -18,17 +29,5 @@
 
 // zenoh key that is published.
 #define KEYEXPR "environment/wind"
-
-#include <Arduino_JSON.h>
-#include <ArduinoOTA.h>
-#include "ZenohNode.h"
-#include "WifiNode.h"
-#include "NMEA2000Node.h"
-#include "ModbusNode.h"
-#include "WebServerNode.h"
-#include <PicoSyslog.h>
-
-//extern PicoSyslog::Logger syslog;
-extern Preferences preferences;
 
 #endif

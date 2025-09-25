@@ -18,16 +18,8 @@
 #define ESP32_MOD_TX_PIN GPIO_NUM_0  // modbux TX
 
 #define LED_BLUE 8 // blue LED pin
-#include <Arduino.h>
-#include <Preferences.h>
-#include <ultrasonicWind.h>
 
-
-//PicoSyslog::Logger syslog;
-Preferences preferences;
-    
-
-ZenohNode zenoh;
+#include "ultrasonicWind.h"
 
 // web server
 //  Replace with your network credentials
@@ -37,19 +29,22 @@ const char *password = "foxglove16.4";
 unsigned long zenohLastTime = 0;
 unsigned long zenohTimerDelay = 1000;
 
-#define VALUE "[ARDUINO]{ESP32} Publication from Zenoh-Pico!"
+//#define VALUE "[ARDUINO]{ESP32} Publication from Zenoh-Pico!"
 
+PicoSyslog::Logger syslog("wind");
+    
+ZenohNode zenoh;
 
 // modbus
 HardwareSerial modSerial(1);
 
-ModbusNode modbusNode(modSerial, LED_BLUE);
+WindNode windNode(modSerial, LED_BLUE);
 
 WifiNode wifiNode(ssid, password);
 
 NMEA2000Node nmea2000Node;
 
-WebServer webServer;
+WebServerNode webServerNode;
 
 // Json Variable to Hold Sensor Readings
 JSONVar readings;
@@ -73,8 +68,8 @@ void OnN2kOpen()
 
 double deAverageAwa()
 {
-  double diff = modbusNode.awa - modbusNode.last_awa;
-  double new_awa = modbusNode.awa + diff;
+  double diff = windNode.awa - windNode.last_awa;
+  double new_awa = windNode.awa + diff;
   if (new_awa >= 360)
     new_awa = new_awa - 360;
   if (new_awa < 0)
@@ -86,35 +81,35 @@ double deAverageAwa()
 // Simple message callback matching ZenohMessageCallback
 void onZenohMessage(const char *topic, const char *payload, size_t len)
 {
-  Serial.print("Received on [");
-  Serial.print(topic);
-  Serial.print("]: ");
+  syslog.debug.print("Received on [");
+  syslog.debug.print(topic);
+  syslog.debug.print("]: ");
 
   // Print payload as text (safe only for text payloads)
   for (size_t i = 0; i < len; ++i)
   {
-    Serial.print(payload[i]);
+    syslog.debug.print(payload[i]);
   }
-  Serial.println();
+  syslog.debug.println();
 }
 
 void initZenoh()
 {
   if (!zenoh.begin(ZENOH_LOCATOR,ZENOH_MODE, KEYEXPR))
   {
-    Serial.println("Zenoh setup failed!");
+    syslog.error.println("Zenoh setup failed!");
     return;
   }
   // Subscribe to a topic
   if (zenoh.subscribe("navigation/courseOverGround", onZenohMessage) 
       && zenoh.subscribe("navigation/speedOverGround", onZenohMessage))
   {
-    Serial.println("Subscribed to navigation/courseOverGround");
-    Serial.println("Subscribed to navigation/speedOverGround");
+    syslog.information.println("Subscribed to navigation/courseOverGround");
+    syslog.information.println("Subscribed to navigation/speedOverGround");
   }
   else
   {
-    Serial.println("Subscribe failed");
+    syslog.error.println("Subscribe failed");
   }
 }
 
@@ -124,12 +119,12 @@ void processZenoh()
   if ((millis() - zenohLastTime) > zenohTimerDelay)
   {
     readings["environment"]["wind"]["angleApparent"] = DegToRad(deAverageAwa()); 
-    readings["environment"]["wind"]["speedApparent"] = modbusNode.aws_ms; 
+    readings["environment"]["wind"]["speedApparent"] = windNode.aws_ms; 
     // Use the raw-payload publish overload
 
     if (!zenoh.publish(KEYEXPR, JSON.stringify(readings).c_str()))
     {
-      Serial.println("Publish failed (node not running?)");
+      syslog.error.println("Publish failed (node not running?)");
       if(!zenoh.isRunning()){
         initZenoh();
       }
@@ -159,21 +154,21 @@ void initOTA()
         type = "filesystem";
 
       // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      Serial.println("Start updating " + type);
+      syslog.information.println("Start updating " + type);
     })
     .onEnd([]() {
-      Serial.println("\nEnd");
+      syslog.information.println("\nEnd");
     })
     .onProgress([](unsigned int progress, unsigned int total) {
-      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+      syslog.information.printf("Progress: %u%%\r", (progress / (total / 100)));
     })
     .onError([](ota_error_t error) {
-      Serial.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+      syslog.error.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) syslog.error.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) syslog.error.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) syslog.error.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) syslog.error.println("Receive Failed");
+      else if (error == OTA_END_ERROR) syslog.error.println("End Failed");
     });
 
   ArduinoOTA.begin();
@@ -187,7 +182,8 @@ extern "C++" {
 void setup()
 {
   Serial.begin(115200);
-  //syslog.server = RSYSLOG_IP;
+  syslog.server = RSYSLOG_IP;
+  syslog.default_loglevel = PicoSyslog::LogLevel::debug;
 
   wifiNode.init();
   //wait for connection
@@ -195,14 +191,14 @@ void setup()
     delay(10);
   }
   delay(1000);
-  Serial.print("Wifi connected : ");
-  Serial.println(wifiNode.getIP());
+  syslog.print("Wifi connected : ");
+  syslog.println(wifiNode.getIP());
   
   initOTA();
 //  delay(4000);
-  webServer.init();
+  webServerNode.init();
 
-  modbusNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
+  windNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
 
   nmea2000Node.init();
   nmea2000Node.setOnOpen(OnN2kOpen);
@@ -215,14 +211,15 @@ void setup()
 // *****************************************************************************
 void loop()
 {
-  modbusNode.query(MODBUS_SLAVE_ID, WIND_SPEED_REG, DIRECTION_REG, false);
+  windNode.query(MODBUS_SLAVE_ID, WIND_SPEED_REG, DIRECTION_REG);
   if (windScheduler.IsTime())
   {
     windScheduler.UpdateNextTime();
-    nmea2000Node.sendWind(DegToRad(deAverageAwa()),modbusNode.aws_ms, false);
+    nmea2000Node.sendWind(DegToRad(deAverageAwa()),windNode.aws_ms, false);
   }
-  webServer.setSensorReadings(deAverageAwa(), modbusNode.aws);
-  webServer.update();
+  webServerNode.setSensorData("awa",deAverageAwa());
+  webServerNode.setSensorData("aws", windNode.aws);
+  webServerNode.update();
   nmea2000Node.parseMessages();
   nmea2000Node.checkNodeAddress();
   processZenoh();
