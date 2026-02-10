@@ -19,8 +19,8 @@
 #define ESP32_MOD_RX_PIN GPIO_NUM_2  // modbus RX
 #define ESP32_MOD_TX_PIN GPIO_NUM_0  // modbux TX
 
-#define KEY_ANGLE_APPARENT "environment/wind/angleApparent" 
-#define KEY_SPEED_APPARENT "environment/wind/speedApparent" 
+//#define KEY_ANGLE_APPARENT "environment/wind/angleApparent" 
+//#define KEY_SPEED_APPARENT "environment/wind/speedApparent" 
 
 #define LED_BLUE 8 // blue LED pin
 
@@ -68,8 +68,8 @@ void setWindData(double angleRad, double speedMs)
   webServerNode.setSensorData("aws", speedMs * 1.943844); //knots
 
   //setup values for zenoh
-  readings[KEY_ANGLE_APPARENT] = angleRad;
-  readings[KEY_SPEED_APPARENT] = speedMs;
+  readings[KEY_ENVIRONMENT_WIND_ANGLEAPPARENT] = angleRad;
+  readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT] = speedMs;
 
 }
 
@@ -90,8 +90,8 @@ void setup()
   nmea2000Node.setOnOpen(OnN2kOpen);
   nmea2000Node.open();
 
-  zenoh.declarePublisher(KEY_ANGLE_APPARENT);
-  zenoh.declarePublisher(KEY_SPEED_APPARENT);
+  zenoh.declarePublisher(KEY_ENVIRONMENT_WIND_ANGLEAPPARENT);
+  zenoh.declarePublisher(KEY_ENVIRONMENT_WIND_SPEEDAPPARENT);
 }
 
 // *****************************************************************************

@@ -2,7 +2,7 @@
 #define ULTRASONICWIND_H
 
 #include <Arduino.h>
-#include <Arduino_JSON.h>
+#include <ArduinoJson.h>
 #include <ArduinoOTA.h>
 #include <ZenohNode.h>
 #include <WifiNode.h>
@@ -27,5 +27,12 @@
 //#define ZENOH_MODE "client"
 //#define ZENOH_LOCATOR "tcp/192.168.1.125:7447" 
 //#define ZENOH_LOCATOR "" // If empty, it will scout
+
+#define KEY_ENVIRONMENT_WIND_ANGLEAPPARENT  "environment/wind/angleApparent"
+#define KEY_ENVIRONMENT_WIND_SPEEDAPPARENT  "environment/wind/speedApparent"
+
+//#define KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND  "environment/wind/angleTrueGround"
+//#define KEY_ENVIRONMENT_WIND_ANGLETRUEWATER  "environment/wind/angleTrueWater"
+//#define KEY_ENVIRONMENT_WIND_SPEEDTRUE  "environment/wind/speedTrue"
 
 #endif
