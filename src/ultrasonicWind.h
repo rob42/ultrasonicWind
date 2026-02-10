@@ -12,6 +12,7 @@
 #include <PicoSyslog.h>
 #include <Preferences.h>
 #include <LittleFS.h>
+#include <zenohBase.h>
 
 // remote syslog server for logs
 #define RSYSLOG_IP "192.168.1.125"
@@ -26,8 +27,5 @@
 //#define ZENOH_MODE "client"
 //#define ZENOH_LOCATOR "tcp/192.168.1.125:7447" 
 //#define ZENOH_LOCATOR "" // If empty, it will scout
-
-// zenoh key that is published.
-#define KEYEXPR "environment/wind"
 
 #endif
