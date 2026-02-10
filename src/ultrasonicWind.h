@@ -13,6 +13,7 @@
 #include <Preferences.h>
 #include <LittleFS.h>
 #include <zenohBase.h>
+#include <signalk.h>
 
 // remote syslog server for logs
 #define RSYSLOG_IP "192.168.1.125"
@@ -27,12 +28,5 @@
 //#define ZENOH_MODE "client"
 //#define ZENOH_LOCATOR "tcp/192.168.1.125:7447" 
 //#define ZENOH_LOCATOR "" // If empty, it will scout
-
-#define KEY_ENVIRONMENT_WIND_ANGLEAPPARENT  "environment/wind/angleApparent"
-#define KEY_ENVIRONMENT_WIND_SPEEDAPPARENT  "environment/wind/speedApparent"
-
-//#define KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND  "environment/wind/angleTrueGround"
-//#define KEY_ENVIRONMENT_WIND_ANGLETRUEWATER  "environment/wind/angleTrueWater"
-//#define KEY_ENVIRONMENT_WIND_SPEEDTRUE  "environment/wind/speedTrue"
 
 #endif
