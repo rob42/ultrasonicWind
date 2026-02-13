@@ -14,6 +14,7 @@
 #include <LittleFS.h>
 #include <zenohBase.h>
 #include <signalk.h>
+#include <math.h>
 
 // remote syslog server for logs
 #define RSYSLOG_IP "192.168.1.125"

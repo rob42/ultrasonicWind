@@ -58,6 +58,80 @@ static double deAverageAwa()
   return new_awa;
 }
 
+bool calculateTrueWind(){
+  if(readings[KEY_ENVIRONMENT_WIND_ANGLEAPPARENT].isNull() 
+      ||readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT].isNull() 
+      ||readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT].as<double>()<0.1)
+      return false;
+  if(readings[KEY_NAVIGATION_SPEEDOVERGROUND].isNull()) return false;
+
+  //ok we have the data
+         /*
+		 * Y = 90 - D
+		 * a = AW * ( cos Y )
+		 * bb = AW * ( sin Y )
+		 * b = bb - BS
+		 * True-Wind Speed = (( a * a ) + ( b * b )) 1/2
+		 * True-Wind Angle = 90-arctangent ( b / a )
+         */
+        double trueDirection = 0.0;
+        double trueWindSpeed = 0.0;
+  double apparentDir = readings[KEY_ENVIRONMENT_WIND_ANGLEAPPARENT];
+  double apparentWnd = readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT];
+  double vesselSpd = readings[KEY_NAVIGATION_SPEEDOVERGROUND];
+
+        apparentDir = fmod(apparentDir, TWO_PI);
+        boolean port = apparentDir > PI;
+        if (port) {
+            apparentDir = TWO_PI - apparentDir;
+        }
+
+        /*
+		 * // Calculate true heading diff and true wind speed - JAVASCRIPT
+		 * tan_alpha = (Math.sin(angle) / (aspeed - Math.cos(angle)));
+		 * alpha = Math.atan(tan_alpha);
+		 * 
+		 * tdiff = rad2deg(angle + alpha);
+		 * tspeed = Math.sin(angle)/Math.sin(alpha);
+         */
+        double aspeed = fmax(apparentWnd, vesselSpd);
+        if (apparentWnd > 0 && vesselSpd > 0.0) {
+            aspeed = apparentWnd / vesselSpd;
+        }
+        double angle = apparentDir;
+        double tan_alpha = (sin(angle) / (aspeed - cos(angle)));
+        double alpha = atan(tan_alpha);
+        double tAngle = alpha + angle;
+        if (isnan(tAngle) || isinf(tAngle)) {
+          //no result
+          readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND]=trueDirection;
+          readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE] = trueWindSpeed;
+          return false;
+        }
+        if (port) {
+            trueDirection = (TWO_PI - tAngle);
+        } else {
+            trueDirection = tAngle;
+        }
+        readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND] = fmod(trueDirection ,TWO_PI);
+//        windCalc[1] = tAngle % TWO_PI;
+
+        if (apparentWnd < 0.1 || vesselSpd < 0.1) {
+            trueWindSpeed = max(apparentWnd, vesselSpd);
+            readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE] = trueWindSpeed;
+            return true;
+        }
+        double tspeed = sin(angle) / sin(alpha);
+        if (isnan(tspeed) || isinf(tspeed)) {
+            return false;
+        }
+        trueWindSpeed = abs(tspeed * vesselSpd);
+        readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE] = trueWindSpeed;
+
+        return true;
+
+
+}
 // Set latest wind data (angle radians, speed m/s)
 void setWindData(double angleRad, double speedMs)
 {
@@ -68,11 +142,39 @@ void setWindData(double angleRad, double speedMs)
   webServerNode.setSensorData("aws", speedMs * 1.943844); //knots
 
   //setup values for zenoh
+  zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLEAPPARENT, angleRad);
+  zenoh.publish(KEY_ENVIRONMENT_WIND_SPEEDAPPARENT, speedMs);
+
+  //keep these for true wind calcs later
   readings[KEY_ENVIRONMENT_WIND_ANGLEAPPARENT] = angleRad;
   readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT] = speedMs;
+  //do true wind
+  if(calculateTrueWind()){
+    zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND].as<double>());
+    zenoh.publish(KEY_ENVIRONMENT_WIND_SPEEDTRUE, readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE].as<double>());
+  }
 
 }
 
+void handleSog(const char* topic, const char* payload, size_t len){
+  sprintf("Handling msg: %s =  %s\n", topic, payload);
+  readings[KEY_NAVIGATION_SPEEDOVERGROUND] = strtod(payload,NULL);
+}
+
+void handleHeadingTrue(const char* topic, const char* payload, size_t len){
+  sprintf("Handling msg: %s =  %s\n", topic, payload);
+  readings[KEY_NAVIGATION_HEADINGTRUE] = strtod(payload,NULL);
+}
+
+void handleHeadingMagnetic(const char* topic, const char* payload, size_t len){
+  sprintf("Handling msg: %s =  %s\n", topic, payload);
+  readings[KEY_NAVIGATION_HEADINGMAGNETIC] = strtod(payload,NULL);
+}
+
+void handleMagneticDeviation(const char* topic, const char* payload, size_t len){
+  sprintf("Handling msg: %s =  %s\n", topic, payload);
+  readings[KEY_NAVIGATION_MAGNETICDEVIATION] = strtod(payload,NULL);
+}
 
 // *****************************************************************************
 void setup()
@@ -92,7 +194,12 @@ void setup()
 
   zenoh.declarePublisher(KEY_ENVIRONMENT_WIND_ANGLEAPPARENT);
   zenoh.declarePublisher(KEY_ENVIRONMENT_WIND_SPEEDAPPARENT);
+  zenoh.subscribe(KEY_NAVIGATION_SPEEDOVERGROUND, handleSog);
+  zenoh.subscribe(KEY_NAVIGATION_HEADINGTRUE, handleHeadingTrue);
+  zenoh.subscribe(KEY_NAVIGATION_HEADINGMAGNETIC, handleHeadingMagnetic);
+  zenoh.subscribe(KEY_NAVIGATION_MAGNETICDEVIATION, handleMagneticDeviation);
 }
+
 
 // *****************************************************************************
 void loop()
