@@ -217,14 +217,13 @@ void loop()
   {
     windScheduler.UpdateNextTime();
     double angleRad = DegToRad(deAverageAwa());
-    nmea2000Node.sendWind(angleRad, windNode.aws_ms, false);
+    nmea2000Node.sendWindApparent(angleRad, windNode.aws_ms, false);
     // update base with latest wind so Zenoh and webserver can publish it
     setWindData(angleRad, windNode.aws_ms);
+  }else{
+    // If not sent this cycle still update webserver with latest raw values
+    setWindData(DegToRad(deAverageAwa()), windNode.aws_ms);
   }
-
-  // If not sent this cycle still update webserver with latest raw values
-  setWindData(DegToRad(deAverageAwa()), windNode.aws_ms);
-
   nmea2000Node.parseMessages();
   nmea2000Node.checkNodeAddress();
 
