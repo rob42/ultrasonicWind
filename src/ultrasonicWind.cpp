@@ -144,8 +144,8 @@ void setWindData(double angleRad, double speedMs)
 
   // also expose to webserver sensor map in degrees and raw speed
   double angleDeg = angleRad * 180.0 / M_PI;
-  webServerNode.setSensorData("awa", angleDeg);
-  webServerNode.setSensorData("aws", speedMs * 1.943844); // knots
+  webServerNode.setSensorData("environment.wind.angleApparent", angleDeg);
+  webServerNode.setSensorData("environment.wind.speedApparent", speedMs ); // knots
 
   // setup values for zenoh
   zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLEAPPARENT, angleRad);

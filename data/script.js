@@ -77,6 +77,14 @@ var gaugeAwa = new RadialGauge({
 
 var labelAws = document.getElementById('label-aws');
 
+function updateGauge(myObj){
+    var awa = myObj.environment.wind.angleApparent;
+    var aws = myObj.environment.wind.speedApparent;
+    labelAws.textContent = (aws * 1.943844).toFixed(1); //knots
+    gaugeAwa.value = awa;
+    gaugeAwa.update({ valueText: myObj.awa, animationDuration: 300 });
+}
+
 // Function to get current readings on the webpage when it loads for the first time
 function getReadings(){
   var xhr = new XMLHttpRequest();
@@ -84,12 +92,7 @@ function getReadings(){
     if (this.readyState == 4 && this.status == 200) {
       var myObj = JSON.parse(this.responseText);
       console.log(myObj);
-      var awa = myObj.awa;
-      var aws = myObj.aws;
-      labelAws.textContent = aws.toFixed(1);
-      gaugeAwa.value = awa;
-      gaugeAwa.update({ valueText: myObj.awa, animationDuration: 300 });
-      
+      updateGauge(myObj);
     }
   }; 
   xhr.open("GET", "/readings", true);
@@ -117,10 +120,7 @@ if (!!window.EventSource) {
     console.log("new_readings", e.data);
     var myObj = JSON.parse(e.data);
     console.log(myObj);
-    var aws = myObj.aws;
-    labelAws.textContent = aws.toFixed(1);
-    gaugeAwa.value = myObj.awa;
-    gaugeAwa.update({ valueText: myObj.awa, animationDuration: 300 })
+    updateGauge(myObj);
     
   }, false);
 }
