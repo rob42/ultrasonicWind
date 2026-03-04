@@ -88,6 +88,7 @@ bool calculateTrueWind()
 
   /*
    * // Calculate true heading diff and true wind speed - JAVASCRIPT
+   ++++++
    * tan_alpha = (Math.sin(angle) / (aspeed - Math.cos(angle)));
    * alpha = Math.atan(tan_alpha);
    *
@@ -213,17 +214,18 @@ void setup()
 void loop()
 {
   windNode.query(MODBUS_SLAVE_ID, WIND_SPEED_REG, DIRECTION_REG);
-  if (windScheduler.IsTime())
+  if (windScheduler.IsTime()) //every 500ms
   {
     windScheduler.UpdateNextTime();
     double angleRad = DegToRad(deAverageAwa());
     nmea2000Node.sendWindApparent(angleRad, windNode.aws_ms, false);
     // update base with latest wind so Zenoh and webserver can publish it
     setWindData(angleRad, windNode.aws_ms);
-  }else{
-    // If not sent this cycle still update webserver with latest raw values
-    setWindData(DegToRad(deAverageAwa()), windNode.aws_ms);
   }
+  //else{
+    // If not sent this cycle still update webserver with latest raw values
+  //   setWindData(DegToRad(deAverageAwa()), windNode.aws_ms);
+  // }
   nmea2000Node.parseMessages();
   nmea2000Node.checkNodeAddress();
 
