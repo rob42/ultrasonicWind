@@ -144,8 +144,8 @@ void setWindData(double angleRad, double speedMs)
 
   // also expose to webserver sensor map in degrees and raw speed
   double angleDeg = angleRad * 180.0 / M_PI;
-  webServerNode.setSensorData("environment.wind.angleApparent", angleDeg);
-  webServerNode.setSensorData("environment.wind.speedApparent", speedMs ); // knots
+  webServerNode.setSensorData(KEY_ENVIRONMENT_WIND_ANGLEAPPARENT, angleDeg);
+  webServerNode.setSensorData(KEY_ENVIRONMENT_WIND_SPEEDAPPARENT, speedMs ); // knots
 
   // setup values for zenoh
   zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLEAPPARENT, angleRad);
@@ -190,9 +190,9 @@ void handleMagneticDeviation(const char *topic, const char *payload, size_t len)
 void setup()
 {
   // Initialize base subsystems (WiFi, OTA, WebServer, Zenoh, Syslog)
-  ArduinoOTA.setHostname(NODENAME);
   syslog.app = NODENAME;
-  baseInit();
+  baseInit(NODENAME);
+  zenoh.setHostname(NODENAME);
 
   // initialize wind and nmea nodes
   windNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
