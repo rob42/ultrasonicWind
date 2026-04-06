@@ -76,11 +76,14 @@ var gaugeAwa = new RadialGauge({
   
 
 var labelAws = document.getElementById('label-aws');
+var labelAwsMax = document.getElementById('label-aws-max');
 
 function updateGauge(myObj){
     var awa = myObj.environment.wind.angleApparent;
     var aws = myObj.environment.wind.speedApparent;
+    var awsMax = myObj.environment.wind.speedApparentMax;
     labelAws.textContent = (aws * 1.943844).toFixed(1); //knots
+    labelAwsMax.textContent = (awsMax * 1.943844).toFixed(1); //knots
     gaugeAwa.value = awa;
     gaugeAwa.update({ valueText: myObj.awa, animationDuration: 300 });
 }

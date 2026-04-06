@@ -36,6 +36,8 @@ NMEA2000Node nmea2000Node;
 // Define schedulers for messages. They are declared in base but keep local reference for clarity.
 tN2kSyncScheduler windScheduler(false, 100, 500);
 
+double apparentSpeedMax = 0.0;
+
 // *****************************************************************************
 // Call back for NMEA2000 open. This will be called, when library starts bus communication.
 // See NMEA2000.SetOnOpen(OnN2kOpen); on setup()
@@ -73,6 +75,7 @@ bool calculateTrueWind()
    * True-Wind Speed = (( a * a ) + ( b * b )) 1/2
    * True-Wind Angle = 90-arctangent ( b / a )
    */
+  
   double trueDirection = 0.0;
   double trueWindSpeed = 0.0;
   double apparentDir = readings[KEY_ENVIRONMENT_WIND_ANGLEAPPARENT];
@@ -145,7 +148,11 @@ void setWindData(double angleRad, double speedMs)
   // also expose to webserver sensor map in degrees and raw speed
   double angleDeg = angleRad * 180.0 / M_PI;
   webServerNode.setSensorData(KEY_ENVIRONMENT_WIND_ANGLEAPPARENT, angleDeg);
-  webServerNode.setSensorData(KEY_ENVIRONMENT_WIND_SPEEDAPPARENT, speedMs ); // knots
+  webServerNode.setSensorData(KEY_ENVIRONMENT_WIND_SPEEDAPPARENT, speedMs ); 
+  if(speedMs > apparentSpeedMax){
+    apparentSpeedMax = speedMs;
+  }
+  webServerNode.setSensorData(KEY_ENVIRONMENT_WIND_SPEEDAPPARENTMAX, apparentSpeedMax ); 
 
   // setup values for zenoh
   zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLEAPPARENT, angleRad);
@@ -211,16 +218,20 @@ void setup()
 }
 
 // *****************************************************************************
+long last = millis();
+
 void loop()
 {
   windNode.query(MODBUS_SLAVE_ID, WIND_SPEED_REG, DIRECTION_REG);
-  if (windScheduler.IsTime()) //every 500ms
+ // if (windScheduler.IsTime()) //every 500ms
+ if( (millis() - last)>500)
   {
-    windScheduler.UpdateNextTime();
+   // windScheduler.UpdateNextTime();
     double angleRad = DegToRad(deAverageAwa());
     nmea2000Node.sendWindApparent(angleRad, windNode.aws_ms, false);
     // update base with latest wind so Zenoh and webserver can publish it
     setWindData(angleRad, windNode.aws_ms);
+    last=millis();
   }
   //else{
     // If not sent this cycle still update webserver with latest raw values

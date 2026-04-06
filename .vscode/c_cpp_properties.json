@@ -533,7 +533,6 @@
                 "ARDUINO_VARIANT=\"esp32c3\"",
                 "ARDUINO_BOARD=\"Espressif ESP32-C3-DevKitM-1\"",
                 "ARDUINO_PARTITION_partitions",
-                "__PLATFORMIO_BUILD_DEBUG__",
                 "ZENOH_ARDUINO_ESP32",
                 "ZENOH_COMPILER_GCC",
                 "ZENOH_C_STANDARD=99",
