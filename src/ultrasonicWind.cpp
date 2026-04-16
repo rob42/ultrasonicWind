@@ -171,25 +171,25 @@ void setWindData(double angleRad, double speedMs)
 
 void handleSog(const char *topic, const char *payload, size_t len)
 {
-  sprintf("Handling msg: %s =  %s\n", topic, payload);
+  syslog.debug.printf("Handling msg: %s =  %s\n", topic, payload);
   readings[KEY_NAVIGATION_SPEEDOVERGROUND] = strtod(payload, NULL);
 }
 
 void handleHeadingTrue(const char *topic, const char *payload, size_t len)
 {
-  sprintf("Handling msg: %s =  %s\n", topic, payload);
+  syslog.debug.printf("Handling msg: %s =  %s\n", topic, payload);
   readings[KEY_NAVIGATION_HEADINGTRUE] = strtod(payload, NULL);
 }
 
 void handleHeadingMagnetic(const char *topic, const char *payload, size_t len)
 {
-  sprintf("Handling msg: %s =  %s\n", topic, payload);
+  syslog.debug.printf("Handling msg: %s =  %s\n", topic, payload);
   readings[KEY_NAVIGATION_HEADINGMAGNETIC] = strtod(payload, NULL);
 }
 
 void handleMagneticDeviation(const char *topic, const char *payload, size_t len)
 {
-  sprintf("Handling msg: %s =  %s\n", topic, payload);
+  syslog.debug.printf("Handling msg: %s =  %s\n", topic, payload);
   readings[KEY_NAVIGATION_MAGNETICDEVIATION] = strtod(payload, NULL);
 }
 
@@ -198,7 +198,7 @@ void setup()
 {
   // Initialize base subsystems (WiFi, OTA, WebServer, Zenoh, Syslog)
   syslog.app = NODENAME;
-  baseInit(NODENAME);
+  baseInit(NODENAME, RSYSLOG_IP, PicoSyslog::LogLevel::debug );
   zenoh.setHostname(NODENAME);
 
   // initialize wind and nmea nodes
