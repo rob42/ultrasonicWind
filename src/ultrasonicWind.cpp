@@ -166,10 +166,10 @@ void setWindData(double angleRad, double speedMs)
   if (calculateTrueWind())
   {
    if(!readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND].isNull()){
-     // zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND].as<double>());
+      zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND].as<double>());
    }
    if(!readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE].isNull()){
-     // zenoh.publish(KEY_ENVIRONMENT_WIND_SPEEDTRUE, readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE].as<double>());
+      zenoh.publish(KEY_ENVIRONMENT_WIND_SPEEDTRUE, readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE].as<double>());
    }
   }
 }
@@ -217,13 +217,15 @@ void setup()
   // initialize wind and nmea nodes
   windNode.init(ESP32_MOD_RX_PIN, ESP32_MOD_TX_PIN, MODE, MODBUS_TIMEOUT);
   const long unsigned transmitMessages[] = {130306L, 0}; // Wind
-  nmea2000Node.setTransmitMessages(transmitMessages);
+  nmea2000Node.setTransmitMessages(transmitMessages,2);
   nmea2000Node.init();
   nmea2000Node.setOnOpen(OnN2kOpen);
   nmea2000Node.open();
 
   zenoh.declarePublisher(KEY_ENVIRONMENT_WIND_ANGLEAPPARENT);
   zenoh.declarePublisher(KEY_ENVIRONMENT_WIND_SPEEDAPPARENT);
+  zenoh.declarePublisher(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND);
+  zenoh.declarePublisher(KEY_ENVIRONMENT_WIND_SPEEDTRUE);
   zenoh.subscribe(KEY_NAVIGATION_SPEEDOVERGROUND, handleSog);
   zenoh.subscribe(KEY_NAVIGATION_HEADINGTRUE, handleHeadingTrue);
   zenoh.subscribe(KEY_NAVIGATION_HEADINGMAGNETIC, handleHeadingMagnetic);
