@@ -78,9 +78,9 @@ bool calculateTrueWind()
   
   double trueDirection = 0.0;
   double trueWindSpeed = 0.0;
-  double apparentDir = readings[KEY_ENVIRONMENT_WIND_ANGLEAPPARENT];
-  double apparentWnd = readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT];
-  double vesselSpd = readings[KEY_NAVIGATION_SPEEDOVERGROUND];
+  double apparentDir = readings[KEY_ENVIRONMENT_WIND_ANGLEAPPARENT].as<double>();
+  double apparentWnd = readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT].as<double>();
+  double vesselSpd = readings[KEY_NAVIGATION_SPEEDOVERGROUND].as<double>();
 
   apparentDir = fmod(apparentDir, TWO_PI);
   boolean port = apparentDir > PI;
@@ -122,7 +122,8 @@ bool calculateTrueWind()
   {
     trueDirection = tAngle;
   }
-  readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND] = fmod(trueDirection, TWO_PI);
+  trueDirection = fmod(trueDirection, TWO_PI);
+  readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND] = trueDirection;
   //        windCalc[1] = tAngle % TWO_PI;
 
   if (apparentWnd < 0.1 || vesselSpd < 0.1)
@@ -164,33 +165,45 @@ void setWindData(double angleRad, double speedMs)
   // do true wind
   if (calculateTrueWind())
   {
-    zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND].as<double>());
-    zenoh.publish(KEY_ENVIRONMENT_WIND_SPEEDTRUE, readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE].as<double>());
+   if(!readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND].isNull()){
+     // zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND].as<double>());
+   }
+   if(!readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE].isNull()){
+     // zenoh.publish(KEY_ENVIRONMENT_WIND_SPEEDTRUE, readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE].as<double>());
+   }
   }
 }
 
 void handleSog(const char *topic, const char *payload, size_t len)
 {
-  syslog.debug.printf("Handling msg: %s =  %s\n", topic, payload);
-  readings[KEY_NAVIGATION_SPEEDOVERGROUND] = strtod(payload, NULL);
+  char value[len+1] {'\0'};
+  strncpy(value,payload,len);
+  syslog.debug.printf("Handling msg: %s =  %s\n", topic, value);
+  readings[KEY_NAVIGATION_SPEEDOVERGROUND] = strtod(value, NULL);
 }
 
 void handleHeadingTrue(const char *topic, const char *payload, size_t len)
 {
-  syslog.debug.printf("Handling msg: %s =  %s\n", topic, payload);
-  readings[KEY_NAVIGATION_HEADINGTRUE] = strtod(payload, NULL);
+  char value[len+1] {'\0'};
+  strncpy(value,payload,len);
+  syslog.debug.printf("Handling msg: %s =  %s\n", topic, value);
+  readings[KEY_NAVIGATION_HEADINGTRUE] = strtod(value, NULL);
 }
 
 void handleHeadingMagnetic(const char *topic, const char *payload, size_t len)
 {
-  syslog.debug.printf("Handling msg: %s =  %s\n", topic, payload);
-  readings[KEY_NAVIGATION_HEADINGMAGNETIC] = strtod(payload, NULL);
+  char value[len+1] {'\0'};
+  strncpy(value,payload,len);
+  syslog.debug.printf("Handling msg: %s =  %s\n", topic, value);
+  readings[KEY_NAVIGATION_HEADINGMAGNETIC] = strtod(value, NULL);
 }
 
 void handleMagneticDeviation(const char *topic, const char *payload, size_t len)
 {
-  syslog.debug.printf("Handling msg: %s =  %s\n", topic, payload);
-  readings[KEY_NAVIGATION_MAGNETICDEVIATION] = strtod(payload, NULL);
+  char value[len+1] {'\0'};
+  strncpy(value,payload,len);
+  syslog.debug.printf("Handling msg: %s =  %s\n", topic, value);
+  readings[KEY_NAVIGATION_MAGNETICDEVIATION] = strtod(value, NULL);
 }
 
 // *****************************************************************************
