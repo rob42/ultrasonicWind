@@ -126,6 +126,7 @@ if (!!window.EventSource) {
     updateGauge(myObj);
     
   }, false);
+}
 
   // Select the two elements that will be clickable
 const toggleButton = document.getElementById("button-menu");
@@ -170,4 +171,3 @@ navWrapper.addEventListener("click", e => {
     toggleButton.classList.remove("close");
   }
 });
-}
