@@ -81,12 +81,12 @@ bool calculateTrueWind()
    * True-Wind Angle = 90-arctangent ( b / a )
    */
   
-  double trueDirection = 0.0;
-  double trueWindSpeed = 0.0;
+  
   double apparentDir = readings[KEY_ENVIRONMENT_WIND_ANGLEAPPARENT][KEY_VALUE].as<double>();
   double apparentWnd = readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT][KEY_VALUE].as<double>();
   double vesselSpd = readings[KEY_NAVIGATION_SPEEDOVERGROUND][KEY_VALUE].as<double>();
-
+  double trueDirection = apparentDir;
+  double trueWindSpeed = apparentWnd;
   apparentDir = fmod(apparentDir, TWO_PI);
   boolean port = apparentDir > PI;
   if (port)
@@ -172,9 +172,11 @@ void setWindData(double angleRad, double speedMs)
   {
    if(!readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND].isNull()){
       zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND][KEY_VALUE].as<double>());
+      webServerNode.setSensorData(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND][KEY_VALUE].as<double>() ); 
    }
    if(!readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE].isNull()){
       zenoh.publish(KEY_ENVIRONMENT_WIND_SPEEDTRUE, readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE][KEY_VALUE].as<double>());
+      webServerNode.setSensorData(KEY_ENVIRONMENT_WIND_SPEEDTRUE, readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE][KEY_VALUE].as<double>() ); 
    }
   }
 }
