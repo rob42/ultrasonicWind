@@ -66,7 +66,7 @@ void setReadings(char* key, double value){
 }
 bool calculateTrueWind()
 {
-  if (readings[KEY_ENVIRONMENT_WIND_ANGLEAPPARENT].isNull() || readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT].isNull() || readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT].as<double>() < 0.1)
+  if (readings[KEY_ENVIRONMENT_WIND_ANGLEAPPARENT].isNull() || readings[KEY_ENVIRONMENT_WIND_SPEEDAPPARENT].isNull() )
     return false;
   if (readings[KEY_NAVIGATION_SPEEDOVERGROUND].isNull())
     return false;
@@ -117,7 +117,7 @@ bool calculateTrueWind()
     // no result
     setReadings(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, trueDirection);
     setReadings(KEY_ENVIRONMENT_WIND_SPEEDTRUE, trueWindSpeed);
-    return false;
+    return true;
   }
   if (port)
   {
