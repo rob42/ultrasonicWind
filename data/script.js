@@ -126,4 +126,48 @@ if (!!window.EventSource) {
     updateGauge(myObj);
     
   }, false);
+
+  // Select the two elements that will be clickable
+const toggleButton = document.getElementById("button-menu");
+const navWrapper = document.getElementById("nav");
+const navitems = document.getElementById("nav-items");
+
+/* 
+  Whenever the button is clicked, 
+  add and remove the necessary classes 
+  to display the menu.
+*/
+toggleButton.addEventListener("click", () => {
+  //get the latest list of other nodes
+  var xhr = new XMLHttpRequest();
+  xhr.onload = function() {
+  if (xhr.status >= 200 && xhr.status < 300) {
+      console.log(this.responseText);
+      var links = JSON.parse(this.responseText);
+      console.log(links);
+      navitems.innerHTML = '';
+      if(links != null){
+        links.forEach(function(link) { 
+          navitems.innerHTML += '<a class="link-item" href="http://'+link+'.local" >'+link+'</a>';
+        });
+      }
+      toggleButton.classList.toggle("close");
+      navWrapper.classList.toggle("show");
+    }
+  }; 
+  xhr.open("GET", "/menu", true);
+  xhr.send();
+  
+});
+
+/* 
+  When a click occurs outside the link container, 
+  the menu should hide.
+*/
+navWrapper.addEventListener("click", e => {
+  if (e.target.id === "nav") {
+    navWrapper.classList.remove("show");
+    toggleButton.classList.remove("close");
+  }
+});
 }
