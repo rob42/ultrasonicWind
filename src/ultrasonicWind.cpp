@@ -172,7 +172,9 @@ void setWindData(double angleRad, double speedMs)
   {
    if(!readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND].isNull()){
       zenoh.publish(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND][KEY_VALUE].as<double>());
-      webServerNode.setSensorData(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND][KEY_VALUE].as<double>() ); 
+      double twaRad = readings[KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND][KEY_VALUE].as<double>() ;
+      double twaDeg = twaRad * 180.0 / M_PI;
+      webServerNode.setSensorData(KEY_ENVIRONMENT_WIND_ANGLETRUEGROUND, twaDeg); 
    }
    if(!readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE].isNull()){
       zenoh.publish(KEY_ENVIRONMENT_WIND_SPEEDTRUE, readings[KEY_ENVIRONMENT_WIND_SPEEDTRUE][KEY_VALUE].as<double>());

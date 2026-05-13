@@ -1,12 +1,37 @@
 // Get current sensor readings when the page loads  
 window.addEventListener('load', getReadings);
 
+
+var sectors = [  	
+  	  {
+          "from": 30,
+          "to": 40,
+          "color": "#ff8c1a"
+      },
+      {
+          "from": 40,
+          "to": 150,
+          "color": "#33cc33"
+      },
+       {
+          "from": 210,
+          "to": 320,
+          "color": "#e60000"
+      },
+       {
+          "from":320,
+          "to": 330,
+          "color": "#ff8c1a"
+      }
+    ];
+
 // Create AWA Gauge
 var gaugeAwa = new RadialGauge({
   renderTo: 'gauge-awa',
   width: 300,
   height: 300,
-  units: "AWA",
+  title: "AWA",
+  fontTitleSize: 70,
   minValue: 0,
   maxValue: 360,
   colorValueBoxRect: "#049faa",
@@ -35,30 +60,7 @@ var gaugeAwa = new RadialGauge({
   ],
   minorTicks: 3,
   strokeTicks: true,
-  highlights: [
-  	
-  	{
-          "from": 30,
-          "to": 40,
-          "color": "#ff8c1a"
-      },
-      {
-          "from": 40,
-          "to": 150,
-          "color": "#33cc33"
-      },
-       {
-          "from": 210,
-          "to": 320,
-          "color": "#e60000"
-      },
-       {
-          "from":320,
-          "to": 330,
-          "color": "#ff8c1a"
-      }
-      
-  ],
+  highlights: sectors,
   colorPlate: "#fff",
   borderShadowWidth: 0,
   borders: false,
@@ -76,16 +78,40 @@ var gaugeAwa = new RadialGauge({
   
 
 var labelAws = document.getElementById('label-aws');
+var labelTwa = document.getElementById('label-twa');
+var labelTws = document.getElementById('label-tws');
 var labelAwsMax = document.getElementById('label-aws-max');
 
 function updateGauge(myObj){
     var awa = myObj.environment.wind.angleApparent;
     var aws = myObj.environment.wind.speedApparent;
+    var twa = myObj.environment.wind.angleTrueGround;
+    var tws = myObj.environment.wind.speedTrue;
     var awsMax = myObj.environment.wind.speedApparentMax;
     labelAws.textContent = (aws * 1.943844).toFixed(1); //knots
+    if(tws != null){
+      labelTws.textContent = (tws * 1.943844).toFixed(1); //knots
+    }else{
+      labelTws.textContent = "--.-";
+    }
     labelAwsMax.textContent = (awsMax * 1.943844).toFixed(1); //knots
     gaugeAwa.value = awa;
-    gaugeAwa.update({ valueText: myObj.awa, animationDuration: 300 });
+    
+    if(sectors.length > 4) sectors.pop();
+    if(twa!=null){
+      sectors.push(
+        {
+            "from":twa-1,
+            "to": twa+1,
+            "color": "#4314eeff"
+        });
+    }
+
+    gaugeAwa.update({ 
+      valueText: awa, 
+      animationDuration: 300,
+      highlights: sectors
+    });
 }
 
 // Function to get current readings on the webpage when it loads for the first time
@@ -128,6 +154,17 @@ if (!!window.EventSource) {
   }, false);
 }
 
+testObj = {"environment":{
+              "wind":{
+                "angleApparent": 12,
+                "speedApparent": 23,
+                "angleTrueGround":12,
+                "speedTrue": 17,
+                "speedApparentMax": 43
+              }
+            }
+};
+updateGauge(testObj);
   // Select the two elements that will be clickable
 const toggleButton = document.getElementById("button-menu");
 const navWrapper = document.getElementById("nav");

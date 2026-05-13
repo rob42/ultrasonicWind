@@ -113,7 +113,7 @@ body {
   padding: 5%;
 }
 .card-grid { 
-  max-width: 1200px; 
+  max-width: 500px; 
   margin: 0 auto; 
   display: grid; 
   grid-gap: 2rem; 
@@ -136,9 +136,25 @@ body {
 	gap: 0.75rem;
 }
 .large-text {
-	font-size: clamp(6rem, 30vw, 12rem);
+	font-size: clamp(5rem, 25vw, 10rem);
 	font-weight: bold;
 }
 .medium-text {
 	font-size: clamp(1.2rem, 5vw, 2rem);
+}
+.tw-text-left {
+  display: flex;
+	font-size: clamp(1.2rem, 5vw, 2rem);
+  align-items: unset;
+	justify-content: start;
+  gap: 0.75rem;
+  white-space:nowrap;
+}
+.tw-text-right {
+  display: flex;
+	font-size: clamp(1.2rem, 5vw, 2rem);
+  align-items: unset;
+	justify-content: end;
+  gap: 0.75rem;
+  white-space:nowrap;
 }
